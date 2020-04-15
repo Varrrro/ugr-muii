@@ -1,0 +1,61 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage[bottom]{footmisc}
+\usepackage{listings}
+\usepackage{color}
+
+\hypersetup{
+    colorlinks=true
+}
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+\lstset{
+    frame=tb,
+    language=R,
+    aboveskip=3mm,
+    belowskip=3mm,
+    showstringspaces=false,
+    columns=flexible,
+    basicstyle={\small\ttfamily},
+    numbers=none,
+    numberstyle=\tiny\color{gray},
+    keywordstyle=\color{blue},
+    commentstyle=\color{dkgreen},
+    stringstyle=\color{mauve},
+    breaklines=true,
+    breakatwhitespace=true,
+    tabsize=3
+}
+
+\renewcommand{\contentsname}{Índice}
+\renewcommand{\figurename}{Figura}
+
+\begin{document}
+\begin{titlepage}
+    \centering
+    \includegraphics[width=0.5\textwidth]{images/logo-ugr.png}\par
+    \vspace{1cm}
+    {\Large\scshape Sistemas Inteligentes para la Gestión en la Empresa \par}
+    {\huge\bfseries Pre-procesamiento de datos y clasificación binaria \par}
+    \vspace{0.2cm}
+    {\scshape Práctica 1 \par}
+    \vfill
+    {\large Víctor Vázquez Rodríguez  \par}
+    {victorvazrod@correo.ugr.es \par}
+    \vfill
+    {\large Máster universitario en Ingeniería Informática \par}
+    \vspace{0.2cm}
+    {Curso 2019/20 \par}
+\end{titlepage}
+
+\tableofcontents\newpage
+
+\input{sections/introduction.tex}\newpage
+\input{sections/exploration.tex}\newpage
+\input{sections/preprocessing.tex}\newpage
+\input{sections/classification.tex}\newpage
+\input{sections/conclusions.tex}\newpage
+\end{document}

@@ -1,0 +1,22 @@
+\section{Conclusiones}
+Viendo los resultados obtenidos en la sección anterior y, basándonos en el
+\textit{F-measure} como una medida general de la bondad del clasificador,
+podemos decir que la regresión logística es una mejor opción que el perceptrón
+multicapa. Además, los resultados obtenidos para el conjunto balanceado usando
+ROSE han sido mejores que los obtenidos para el de SMOTE.
+
+El clasificador basado en regresión logística, a pesar de resultar ser el mejor
+de los experimentos que he realizado, tampoco me ha dado resultados que pueda
+considerar particularmente buenos, ya que la medida del \textit{recall} es
+demasiado baja para un problema donde es tan importante como es este. Otros
+clasificadores, como \textit{Random Forest}, seguro que son capaces de obtener
+resultados mejores, pero, como ya he comentado, me han sido imposibles aplicar
+debido, supongo, a los limitados recursos de mi ordenador.
+
+Sin duda, la parte más importante de este problema de clasificación se
+encuentra en la selección de las variables con las que entrenar los modelos,
+aunque también hemos visto que las técnicas usadas para el balanceo de los
+ejemplos de la clase objetivo tiene un impacto considerable. Es posible que se
+puedan obtener mejores resultados aplicando otra técnica de extracción de
+variables diferente a \textit{Boruta} o, incluso, usando más variables de las
+que he usado yo, una vez más, por mis limitados recursos.
