@@ -1,0 +1,35 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+\usepackage[colorlinks]{hyperref}
+\usepackage{graphicx}
+\usepackage[nottoc]{tocbibind}
+
+\begin{document}
+\begin{titlepage}
+    \centering
+    \includegraphics[width=0.5\textwidth]{images/logo-ugr.png}\par
+    \vspace{1cm}
+    {\Large\scshape Gestión de Información en la Web \par}
+    {\huge\bfseries Análisis preliminar y visualización básica de una red social
+    con \textit{Gephi} \par}
+    \vspace{0.2cm}
+    {\scshape Práctica 1 \par}
+    \vfill
+    {\large Víctor Vázquez Rodríguez  \par}
+    {victorvazrod@correo.ugr.es \par}
+    {76664636R \par}
+    \vfill
+    {\large Máster universitario en Ingeniería Informática \par}
+    \vspace{0.2cm}
+    {Curso 2019/20 \par}
+\end{titlepage}
+
+\tableofcontents\newpage
+
+\input{sections/visualization.tex}\newpage
+\input{sections/analysis.tex}\newpage
+
+\bibliographystyle{ieeetr}
+\bibliography{ref}
+\end{document}
