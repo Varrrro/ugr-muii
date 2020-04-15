@@ -1,0 +1,109 @@
+\section{Indexador}
+
+Como su propio nombre indica, el indexador es la aplicación que construye el índice a partir de una colección de documentos dada. Se trata de una aplicación de línea de comandos que, como ya hemos indicado, hemos construido con \textbf{picocli}, una librería orientada a este tipo de aplicaciones. Esta librería nos permite definir \textit{flags} y otros parámetros de entrada para los comandos, facilitando su manejo. A continuación, se muestra la definición del comando creado para la indexación.
+
+\begin{lstlisting}[language=Java]
+@Command(name = "index", description = "Create or update an index from a set of documents.", mixinStandardHelpOptions = true, version = "index 1.0")
+public class Index implements Callable<Integer> {
+
+    @Parameters(paramLabel = "DIR", description = "Documents' directory to be indexed.", arity = "1..1")
+    private File docsDir;
+
+    @Option(names = { "-i", "--index" }, paramLabel = "INDEX", description = "Path to index. Defaults to /tmp/index.")
+    private File indexFile = new File("/tmp/index");
+
+    @Option(names = { "-s", "--stopwords" }, paramLabel = "STOPWORDS", description = "Stopwords file.", required = true)
+    private File stopwordsFile;
+
+    @Option(names = {"-u", "--update"}, description = "Update index instead of creating a new one.")
+    private boolean update;
+
+    public static void main(String... args) {
+        int exitCode = new CommandLine(new Index()).execute(args);
+        System.exit(exitCode);
+    }
+    
+    @Override
+    public Integer call() throws Exception {
+        // Index documents
+    }
+}
+\end{lstlisting}
+
+Como se puede ver, nuestra aplicación requiere, por lo menos, de dos entradas: las rutas al fichero de palabras vacías (\textit{stopwords}) y a la colección de documentos. También se puede indicar una ruta para almacenar el índice aunque, si no se especifica, se usa \verb|/tmp/index| por defecto. Destacamos también el \textit{flag} \verb|-u|, el cuál permite indicar que se está actualizando un índice ya existente, con lo que no tenemos que realizar todo el proceso de nuevo si no es necesario.
+
+En cuanto a la lógica que se encarga de realizar la indexación, es la siguiente:
+
+\begin{lstlisting}[language=Java]
+try {
+    // Read stopwords from file
+    var stopwords = readStopwords(stopwordsPath);
+
+    // Set up index writer
+    Directory dir = FSDirectory.open(indexPath);
+    Analyzer analyzer = new SpanishAnalyzer(new CharArraySet(stopwords, true));
+    IndexWriterConfig config = new IndexWriterConfig(analyzer);
+
+    // Update index or create a new one
+    if (update) {
+        config.setOpenMode(OpenMode.CREATE_OR_APPEND);
+    } else {
+        config.setOpenMode(OpenMode.CREATE);
+    }
+
+    // Create index writer and process documents
+    IndexWriter writer = new IndexWriter(dir, config);
+    indexDocuments(writer, docsPath);
+
+    // Close index writer
+    writer.close();
+} catch (Exception e) {
+    System.out.println("Can't create index - Error: "+ e.getMessage());
+    return 1;
+}
+\end{lstlisting}
+
+El método \verb|indexDocuments| es el encargado de recorrer todos los archivos de la colección dada y llamar a \verb|indexDocument| para cada uno de ellos. Este último, extrae el texto del archivo PDF y añade el nuevo documento al índice, como se puede ver a continuación:
+
+\begin{lstlisting}[language=Java]
+public void indexDocument(IndexWriter writer, Path file) throws IOException {
+    try (PDDocument pdf = PDDocument.load(file.toFile())) {
+        // Extract text from PDF
+        PDFTextStripper stripper = new PDFTextStripper();
+        stripper.setLineSeparator("\n");
+        stripper.setStartPage(1);
+        String contents = stripper.getText(pdf);
+        pdf.close();
+
+        // Create Lucene document
+        Document doc = new Document();
+
+        // Add the path of the file
+        doc.add(new StringField("path", file.toString(), Field.Store.YES));
+
+        // Add the contents of the file
+        doc.add(new TextField("contents", contents, Field.Store.NO));
+
+        // Add the document to the index
+        writer.addDocument(doc);
+    }
+}
+\end{lstlisting}
+
+Como se puede apreciar, indexamos tanto el contenido del documento como la ruta hacia el mismo.
+
+\subsection{Manual de uso}
+
+Usando el fichero \verb|jar| proporcionado, se puede ejecutar la aplicación de la siguiente manera:
+
+\begin{lstlisting}
+    java -jar indexer.jar --stopwords=[Ruta a fichero] --index=[Ruta a indice] [Ruta a coleccion]
+\end{lstlisting}
+
+Alternativamente, si se va a actualizar un índice ya creado, se puede usar:
+
+\begin{lstlisting}
+    java -jar indexer.jar -u --stopwords=[Ruta a fichero] --index=[Ruta a indice] [Ruta a coleccion]
+\end{lstlisting}
+
+\textbf{Nota:} Como ya se ha indicado anteriormente, no es completamente necesario indicar una ruta para el índice, usándose \verb|/tmp/index| por defecto.
