@@ -1,0 +1,37 @@
+\section{Algoritmo}
+
+El objetivo de un sistema de recomendación es presentar a un usuario elementos que no ha visto/consumido y que pueden ser de su interés. Una manera de conseguir esto es mediante las llamadas técnicas de filtrado colaborativo, las cuáles se basan en las acciones de los usuarios (dar "me gusta"/"no me gusta", puntuar del 1 al 5, ...) para obtener las recomendaciones, aplicando modelos como KNN (\textit{K Nearest Neighbors}, que es el que usaremos en esta práctica.
+
+La idea principal de KNN es buscar los $k$ elementos o vecinos más similares a uno dado y, a partir de ellos, obtener las recomendaciones. Estos elementos pueden ser ítems (basado en ítems) o usuarios del sistema (basado en usuarios). Nosotros aplicaremos KNN basado en usuarios para nuestro sistema de recomendación, de forma que buscamos los usuarios más parecidos al usuario activo para recomendarle las películas que les han gustado a estos otros usuarios.
+
+Las películas son valoradas del 1 al 5, por lo que tenemos que tener en cuenta, además, que distintos usuarios valoran un ítem que les ha gustado de forma diferente, por lo que, lo primero que hacemos, es calcular un valor para equilibrar esos desajustes de escala e interpretación. La fórmula para realizar este cálculo se muestra a continuación, donde $S_u$ es el conjunto de ítems valorados por el usuario $u$ y $n_{S_u}$ es el número de ítems del mismo.
+
+\begin{equation}
+    \bar{r}(u) = \frac{\sum_{i \epsilon S_u} r(u, i)}{n_{S_u}}
+\end{equation}
+
+Una vez obtenido este valor para los usuarios, podemos calcular la similitud entre un usuario $u$ y otro usuario $v$ con la ecuación (2), donde $r(u,i)$ es la valoración dada por el usuario $u$ para el ítem $i$.
+
+\begin{equation}
+    sim(u,v) = \frac{\sum_{i \epsilon S_{uv}}(r(u,i) - \bar{r}(u))(r(v,i) - \bar{r}(v))}{\sqrt{\sum_{i \epsilon S_{uv}}(r(u,i) - \bar{r}(u))^2} \sqrt{\sum_{i \epsilon S_{uv}}(r(v,i) - \bar{r}(v))^2}}
+\end{equation}
+
+Usando esta ecuación, obtenemos la similitud con el usuario activo para todos los demás usuarios presentes en la base de datos, quedándonos con los $k$ usuarios con mayor similitud. Un problema con el que nos podemos encontrar es que, si un usuario sólo tiene un ítem en común con el usuario activo, pero con idéntica valoración, la función de similitud devolverá 1, con lo que podría entrar este usuario en el vecindario. Esto no es realista, ya que solo tienen una película en común y eso no nos ayuda a la hora de obtener recomendaciones adecuadas. Para evitar esto, solo calculamos la similitud de los usuarios que tengan, al menos, 5 películas en común con el usuario activo.
+
+Una vez tenemos definido el vecindario, buscamos los ítems a recomendar al usuario activo entre los que han sido valorados por sus vecinos y no por él. Para obtener estas recomendaciones, estimamos la valoración que le daría a cada ítem el usuario activo $u$ usando la siguiente ecuación:
+
+\begin{equation}
+    \hat{r}(u,i) = \bar{r}(u) + C\sum_v sim(u,v)(r(v,i) - \bar{r}(v))
+\end{equation}
+
+Donde la constante $C$ se calcula de la siguiente manera:
+
+\begin{equation}
+    C = \frac{1}{\sum_v |sim(u,v)|}
+\end{equation}
+
+Cuando ya tenemos la valoración estimada de todos los ítems, seleccionamos solo los de valoración más alta (4 o 5), que son las recomendaciones que le mostramos al usuario activo. No obstante, nos hemos encontrado con que, al sumar el valor $\bar{r}(u)$ en la fórmula de estimación de la valoración, obtenemos valores mayores de 5 para la misma. Para solucionar esto, lo que hacemos es reescalar todo el conjunto de valoraciones estimadas para que estén dentro del intervalo $[1, 5]$ usando la siguiente fórmula, donde $x$ es la valoración estimada a reescalar y $max$ es la valoración máxima que se ha obtenido.
+
+\begin{equation}
+    \frac{x-1}{max-1}4+1
+\end{equation}
