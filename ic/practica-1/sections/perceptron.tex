@@ -1,0 +1,36 @@
+\section{Perceptrón}
+En primer lugar, se implementó el modelo más simple visto en clase: el perceptrón. Esta red consta de 10 neuronas en la capa de salida (una por clase) y 784 neuronas en la capa de entrada (una por cada píxel de la imagen de entrada). Las neuronas de la capa de salida poseen un peso ($w$) para cada entrada ($x$) y un sesgo ($b$).
+
+\begin{equation}
+    z_i = b_i + \sum_{j=1}^n w_i^j x_i^j
+\end{equation}
+
+La entrada neta de cada neurona ($z$) se calcula usando la ecuación 1. A partir de esta entrada neta, cada neurona de salida del perceptrón producirá un 1 o un 0, dependiendo de si la entrada pertenece a la clase que representa dicha neurona o no, respectivamente.
+
+\begin{equation}
+    y_i =
+    \begin{cases}
+        1 \qquad \text{si}\ z_i \geq 0\\
+        0 \qquad \text{en otro caso}
+    \end{cases}
+\end{equation}
+
+La ecuación 2 es la función de activación que producirá estas salidas para cada neurona. Como se puede apreciar, se trata de una función lineal, de forma que nuestro perceptrón es, en definitiva, un clasificador lineal.
+
+Al principio, inicializamos los pesos con valores aleatorios, usando los ejemplos del conjunto de entrenamiento para ir ajustando los pesos y obtener mejores resultados. La manera de entrenar el perceptrón es la siguiente:
+\begin{itemize}
+    \item Si la salida de una neurona es 1 y debería ser 0, se restan a sus pesos los valores de la entrada.
+    \item Si la salida de una neurona es 0 y debería ser 1, se suman a sus pesos los valores de la entrada.
+\end{itemize}
+
+El algoritmo del perceptrón nos garantiza encontrar un conjunto de pesos que clasifique las entradas correctamente, en caso de que dicho conjunto exista. Sin embargo, las clases de este problema no son linealmente separables, por lo que los resultados obtenidos al clasificar los ejemplos con este modelo no son muy buenos, como se puede ver en la siguiente tabla:
+
+\begin{center}
+    \begin{tabular}{ |c|c|c|c| } 
+        \hline
+        $\acute Epocas$ & $Tiempo$ & $Error_{train}$ & $Error_{test}$ \\
+        \hline
+        10       & 23,94s   &  18,13\%        & 18,73\%        \\
+        \hline
+    \end{tabular}
+\end{center}
