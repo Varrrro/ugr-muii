@@ -1,0 +1,8 @@
+\section{Introducción}
+En esta práctica, debemos resolver el problema de la asignación cuadrática (QAP) aplicando algoritmos genéticos. Podemos explicar este problema con un ejemplo simple: Tenemos un total de $n$ instalaciones y $n$ ubicaciones donde colocar las mismas. Entre las distintas ubicaciones existe una distancia $d$ y entre las instalaciones, un flujo o peso $w$. Así, nuestra solución será una permutación $p$ de $n$ elementos que minimice la función 1, donde $p(i)$ es la ubicación de la instalación $i$.
+
+\begin{equation}
+    \sum_{i,j} w(i,j) d(p(i),p(j))
+\end{equation}
+
+Para resolver este problema, implementaremos un algoritmo genético básico, introduciendo luego heurísticas para las variantes baldwiniana y lamarckiana.

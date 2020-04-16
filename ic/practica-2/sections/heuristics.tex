@@ -1,0 +1,11 @@
+\section{Variantes baldwiniana y lamarckiana}
+Se pueden mejorar los resultados obtenidos por el algoritmo base si se aplica alguna heurística. La idea es que los individuos puedan "aprender", es decir, mejorar sus características. Aplico entonces a mi problema una búsqueda local simple de ascensión de colinas.
+
+El algoritmo de ascensión de colinas se aplica a cada elemento de la población y consiste en ir intercambiando valores de posición para comprobar si se reduce el valor dado por la función de coste. Se podría registrar el nuevo coste de cada uno de los intercambios y quedarse con el mejor, pero esto hace que el algoritmo sea computacionalmente costoso, por lo que sencillamente nos quedamos con el primer intercambio que reduce el coste. Para reducir el tiempo de ejecución del algoritmo, también evitamos recalcular la función de coste tras cada intercambio. En su lugar, calculamos la diferencia en el coste que producen las posiciones afectadas: si la diferencia es negativa, es decir, reduce el coste, aplicamos el intercambio y nos quedamos con el nuevo individuo. De esta forma, obtenemos los mismos resultados en un tiempo muy inferior.
+
+Las variantes baldwiniana y lamarckiana difieren en la capacidad de los hijos para heredar las características aprendidas por los padres, implicando la baldwiniana que no pueden y la lamarckiana que sí. De esta forma, la implementación de estas dos variantes del algoritmo base visto anteriormente consiste en aplicar el algoritmo de ascensión de colinas a la generación actual de individuos en distintas fases del algoritmo genético:
+
+\begin{itemize}
+    \item En la variante baldwiniana, se aplica después de haber obtenido los hijos (cruce y mutación) y antes de realizar el reemplazo.
+    \item En la variante lamarckiana, se aplica antes de realizar la selección de padres, de forma que los individuos que se cruzan son los mejorados.
+\end{itemize}
