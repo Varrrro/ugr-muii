@@ -1,0 +1,35 @@
+\section{Conclusiones}
+
+Para facilitar la comparación de los modelos entrenados, se han recopilado en el
+cuadro \ref{tab:test} los resultados obtenidos en las predicciones realizadas
+sobre el conjunto de prueba que ya se han comentado a lo largo de la sección
+anterior.
+
+\begin{table}[h!]
+    \caption{Resultados sobre el conjunto de prueba}
+    \label{tab:test}
+    \begin{center}
+        \begin{tabular}{ |c|c| }
+            \hline
+            \textbf{Clasificador}  & \textbf{AUC} \\
+            \hline
+            \textit{Random Forest} & 0.59517723   \\
+            \hline
+            Perceptrón multicapa   & 0.52218163   \\
+            \hline
+            Regersión logística    & 0.5817315    \\
+            \hline
+        \end{tabular}
+    \end{center}
+\end{table}
+
+El mejor modelo que hemos entrenado es, como se puede ver, el \textit{Random
+    Forest}, con un AUC de 0.59517723, seguido de la regresión logística y con el
+perceptrón multicapa en último lugar. El resultado del clasificador
+\textit{Random Forest} podría ser incluso mejor usando un número de árboles
+mayor a los que se han probado.
+
+En general, los resultados son bastante malos, sin llegar ninguno de los modelos
+siquiera al 0.6 de AUC y creo que esto se debe a que tan solo se usan 6
+atributos de los más de 600 disponibles en el conjunto de datos inicial, así que
+pienso que la calidad que es posible obtener está limitada.

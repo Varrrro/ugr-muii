@@ -1,0 +1,56 @@
+\section{Lectura y filtrado de datos}
+
+El conjunto de datos a utilizar para el problema de clasificación posee más de
+600 atributos, de los cuáles solo tengo que usar los 6 que me han sido asignados
+para la práctica, que son: \textit{PSSM\_r2\_-3\_S}, \textit{PSSM\_central\_0\_P},
+\textit{PSSM\_r1\_1\_Y}, \textit{PSSM\_r1\_-3\_R}, \textit{PSSM\_r1\_0\_R},
+\textit{PredSS\_central\_2}. Estos atributos, además de la clase (columna
+\textit{class}) deben ser filtrados del conjunto de datos y colocados en un
+fichero llamado \texttt{filteredC.small.training}.
+
+El conjunto de datos inicial se encuentra en formato ARFF y dividido en dos
+archivos: uno con la cabecera y las etiquetas y otro con los datos como tal. El
+proceso que se ha seguido para la extracción de los datos deseados es el
+siguiente:
+
+\begin{enumerate}
+    \item Leer el archivo con las cabeceras.
+    \item Extraer las filas que empiezan con las etiquetas
+          \textit{@inputs} o \textit{@outputs}.
+    \item Eliminar estas etiquetas, las comas y separar por palabras (nombres de
+          los atributos).
+    \item Leer el archivo de los datos.
+    \item Poner a cada columna el nombre de su atributo.
+    \item Seleccionar las columnas deseadas y escribir al archivo destino.
+\end{enumerate}
+
+El código encargado de hacer este filtrado se puede ver a continuación:
+
+\begin{lstlisting}
+headers = sc.textFile("/user/datasets/ecbdl14/ECBDL14_IR2.header")
+    .filter(lambda line: "@inputs" in line or "@outputs" in line)
+    .flatMap(lambda line: line.replace(",", "").split())
+    .filter(lambda word: word != "@inputs" and word != "@outputs")
+    .collect()
+
+data = sqlc.read.csv(
+    "/user/datasets/ecbdl14/ECBDL14_IR2.data",
+    header=False,
+    inferSchema=True
+)
+
+for i, colname in enumerate(data.columns):
+    data = data.withColumnRenamed(colname, headers[i])
+
+data = data.select("PSSM_r2_-3_S", "PSSM_central_0_P",
+    "PSSM_r1_1_Y", "PSSM_r1_-3_R", "PSSM_r1_0_R",
+    "PredSS_central_2", "class")
+
+data.write.csv(path, header=True)
+\end{lstlisting}
+
+Como se puede ver, se hace uso de los RDD de Spark para hacer el filtrado de los
+atributos del fichero de cabeceras. Además, cabe destacar que, aunque no se vea
+en el fragmento de código mostrado, al realizar la carga de datos se comprueba
+si existe el fichero \texttt{filteredC.small.training}, en cuyo caso no se
+realiza el filtrado para no gastar tiempo de procesamiento.

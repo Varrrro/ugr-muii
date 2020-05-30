@@ -1,0 +1,212 @@
+\section{Clasificadores}
+
+Se han entrenado modelos para 3 clasificadores diferentes: \textit{Random
+    Forest}, perceptrón multicapa y regresión logística. El entrenamiento de estos
+modelos es idéntico para los 3 clasificadores:
+
+\begin{enumerate}
+    \item Definición del clasificador.
+    \item Definición del \textit{grid} de parámetros.
+    \item Definición del \texttt{CrossValidator}.
+    \item Entrenamiento del modelo usando el conjunto de entrenamiento.
+\end{enumerate}
+
+En el \textit{grid} de parámetros (\texttt{ParamGrid}) se definen una serie de
+valores posibles para los parámetros del clasificador (o de cualquier fase del
+\textit{pipeline}) para que el \texttt{CrossValidator} pruebe todas las
+combinaciones posibles. Este \texttt{CrossValidator} divide el conjunto de datos
+dado en entrenamiento y validación según los \textit{folds} o pliegues que se
+especifiquen (en nuestro caso, 3) y comprueba el modelo entrenado para cada
+combinación de parámetros con los datos de validación. Al final, la combinación
+con un mayor valor de AUC es considerada como el mejor modelo y se usa para
+realizar una predicción sobre el conjunto de prueba.
+
+En las siguientes subsecciones se van a presentar los fragmentos de código
+encargados de la definición y entrenamiento de estos modelos, así como los
+resultados obtenidos para las distintas combinaciones de parámetros y los
+resultados finales sobre el conjunto de prueba para el mejor modelo de cada
+clasificador.
+
+\subsection{\textit{Random Forest}}
+
+Para este clasificador, los parámetros cuyos valores variamos son el número de
+árboles y la medida de impureza usada. En el siguiente fragmento de código, se
+pueden apreciar todos los pasos que ya se han indicado en la introducción
+anterior.
+
+\begin{lstlisting}
+def train_random_forest(prepro, train):
+    rf = RandomForestClassifier(
+        featuresCol="features",
+        labelCol="class",
+    )
+
+    rf_grid = ParamGridBuilder() \
+        .addGrid(rf.numTrees, [10, 50, 100]) \
+        .addGrid(rf.impurity, ["gini", "entropy"]) \
+        .build()
+
+    rf_cv = CrossValidator(
+        estimator=Pipeline(stages=[prepro, rf]),
+        estimatorParamMaps=rf_grid,
+        evaluator=BinaryClassificationEvaluator(labelCol="class"),
+        numFolds=3
+    )
+
+    return rf_cv.fit(train)
+\end{lstlisting}
+
+Los resultados obtenidos se pueden ver en el cuadro \ref{tab:validation-rf}, en
+el que podemos apreciar que ambas métricas de impureza arrojan resultados muy
+similares y que el aumento del número de árboles sí que incrementa el valor del
+AUC, aunque de manera mínima.
+
+\begin{table}[h!]
+    \caption{Resultados de los modelos RF en la validación cruzada}
+    \label{tab:validation-rf}
+    \begin{center}
+        \begin{tabular}{ |c|c|c| }
+            \hline
+            \textbf{numTrees} & \textbf{impurity} & \textbf{AUC} \\
+            \hline
+            10                & \textit{gini}     & 0.5942809    \\
+            \hline
+            50                & \textit{gini}     & 0.5949606    \\
+            \hline
+            100               & \textit{gini}     & 0.595012     \\
+            \hline
+            10                & \textit{entropy}  & 0.5942139    \\
+            \hline
+            50                & \textit{entropy}  & 0.5949326    \\
+            \hline
+            100               & \textit{entropy}  & 0.59501994   \\
+            \hline
+        \end{tabular}
+    \end{center}
+\end{table}
+
+La mejor combinación de las que hemos probado es la de la última fila del cuadro
+\ref{tab:validation-rf}, con 100 árboles y usando entropía como medida de
+impureza. La predicción realizada por este modelo para el conjunto de prueba
+arrojó un valor de AUC de 0.59517723.
+
+\subsection{Perceptrón multicapa}
+
+El segundo clasificador es una red neuronal sencilla. En este caso, el
+\textit{grid} de parámetros define una serie de arquitecturas (número de capas y
+neuronas) diferentes para entrenar y probar. Todas estas arquitecturas tienen
+una capa de entrada con 6 neuronas (una por característica) y otra capa de
+salida con 2 neuronas (clasificación binaria).
+
+\begin{lstlisting}
+def train_multilayer_perceptron(prepro, train):
+    mlp = MultilayerPerceptronClassifier(
+        featuresCol="features",
+        labelCol="class",
+        predictionCol="rawPrediction",
+        maxIter=100
+    )
+
+    mlp_grid = ParamGridBuilder() \
+        .addGrid(mlp.layers, [[6, 4, 2], [6, 8, 4, 2], [6, 8, 2]]) \
+        .build()
+
+    mlp_cv = CrossValidator(
+        estimator=Pipeline(stages=[prepro, mlp]),
+        estimatorParamMaps=mlp_grid,
+        evaluator=BinaryClassificationEvaluator(labelCol="class"),
+        numFolds=3
+    )
+
+    return mlp_cv.fit(train)
+\end{lstlisting}
+
+Los resultados obtenidos se pueden ver en el cuadro \ref{tab:validation-mlp},
+donde apreciamos que la mejor arquitectura ha sido la de [6, 8, 2].
+Posteriormente, este modelo ganador ha realizado una predicción sobre el
+conjunto de prueba con un AUC de 0.52218163.
+
+\begin{table}[h!]
+    \caption{Resultados de los modelos MLP en la validación cruzada}
+    \label{tab:validation-mlp}
+    \begin{center}
+        \begin{tabular}{ |c|c| }
+            \hline
+            \textbf{layers} & \textbf{AUC} \\
+            \hline
+            [6, 4, 2]       & 0.5102396    \\
+            \hline
+            [6, 8, 4, 2]    & 0.52180004   \\
+            \hline
+            [6, 8, 2]       & 0.5255682    \\
+            \hline
+        \end{tabular}
+    \end{center}
+\end{table}
+
+\subsection{Regresión logística}
+
+El último clasificador es el de regresión logística multinomial. En este caso,
+se prueban distintas combinaciones de parámetros de regularización y
+elasticidad.
+
+\begin{lstlisting}
+def train_logistic_regression(prepro, train):
+    lr = LogisticRegression(
+        featuresCol="features",
+        labelCol="class",
+        maxIter=100,
+        family="multinomial"
+    )
+
+    lr_grid = ParamGridBuilder() \
+        .addGrid(lr.regParam, [0.1, 0.01, 0.001]) \
+        .addGrid(lr.elasticNetParam, [0.5, 0.6, 0.8]) \
+        .build()
+
+    lr_cv = CrossValidator(
+        estimator=Pipeline(stages=[prepro, lr]),
+        estimatorParamMaps=lr_grid,
+        evaluator=BinaryClassificationEvaluator(labelCol="class"),
+        numFolds=3
+    )
+
+    return lr_cv.fit(train)
+\end{lstlisting}
+
+Los resultados de la validación cruzada de estos modelos se puede ver en el
+cuadro \ref{tab:validation-lr}. Como se puede ver, los resultados van siendo
+mejores al reducir el valor de la regularización, siendo la mejor combinación la
+de la última fila del cuadro, con 0.001 de regularización y 0.8 de elasticidad.
+Este modelo ganador ha obtenido un AUC de 0.5817315 en su predicción sobre el
+conjunto de prueba final.
+
+\begin{table}[h!]
+    \caption{Resultados de los modelos LR en la validación cruzada}
+    \label{tab:validation-lr}
+    \begin{center}
+        \begin{tabular}{ |c|c|c| }
+            \hline
+            \textbf{regParam} & \textbf{elasticNetParam} & \textbf{AUC} \\
+            \hline
+            0.1               & 0.5                      & 0.57934934   \\
+            \hline
+            0,1               & 0.6                      & 0.5          \\
+            \hline
+            0.1               & 0.8                      & 0.5          \\
+            \hline
+            0.01              & 0.5                      & 0.58033985   \\
+            \hline
+            0.01              & 0.6                      & 0.5803268    \\
+            \hline
+            0.01              & 0.8                      & 0.58027285   \\
+            \hline
+            0.001             & 0.5                      & 0.5812404    \\
+            \hline
+            0.001             & 0.6                      & 0.58124447   \\
+            \hline
+            0.001             & 0.8                      & 0.5812488    \\
+            \hline
+        \end{tabular}
+    \end{center}
+\end{table}

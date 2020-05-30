@@ -1,0 +1,54 @@
+\section{Pre-procesamiento}
+
+Antes de poder entrenar los clasificadores con los datos, se deben realizar
+algunas tareas de pre-procesamiento. Para empezar, observamos que las clases no
+están balanceadas, teniendo unos 680.000 positivos y alrededor de 1.300.000
+negativos. Por ello, aplicamos \textit{undersampling} para balancear las clases
+obteniendo la proporción de registros positivos sobre el total y haciendo
+\texttt{sample} de los registros negativos para obtener la misma proporción, tal
+y como se puede ver en el fragmento de código siguiente:
+
+\begin{lstlisting}
+positives = data.filter(data["class"] == 1)
+negatives = data.filter(data["class"] == 0)
+ratio = float(positives.count()) / float(data.count())
+sampled_negatives = negatives.sample(False, ratio)
+data = positives.union(sampled_negatives)
+\end{lstlisting}
+
+También tenemos que dividir el conjunto de datos en las particiones para
+entrenamiento y prueba, que conseguimos con la función \texttt{randomSplit} de
+Spark. En mi caso, he decidido usar un 70\% de los registros para entrenamiento
+y el resto para prueba.
+
+Una vez realizadas estas dos tareas, ya podríamos entrenar los modelos. No
+obstante, tenemos que tener en cuenta que los clasificadores toman como entrada
+un vector de características, no una serie de columnas. Spark nos proporciona
+\texttt{VectorAssembler} para crear juntar las columnas deseadas en un vector y
+colocarlo en una nueva columna del conjunto de datos. Hay otro impedimento, y es
+que la columna \textit{PredSS\_central\_2} contiene caracteres de texto, los
+cuales no acepta \texttt{VectorAssembler}. Usamos entonces
+\texttt{StringIndexer} para convertir estos caracteres en valores numéricos que
+si pueden incorporarse a los vectores de características. Tanto
+\texttt{StringIndexer} como \texttt{VectorAssembler} se colocan en un
+\texttt{Pipeline} de Spark al que luego se añaden los distintos clasificadores.
+Estos \textit{pipelines} permiten entrenar los flujos de procesamiento completos
+para los datos, obteniendo modelos que trabajan directamente sobre los conjuntos
+de datos sin tener que realizar cada etapa de forma manual.
+
+\begin{lstlisting}
+def create_preprocess_pipeline():
+    si = StringIndexer(
+        inputCol="PredSS_central_2",
+        outputCol="PredSS_central_2_indexed"
+    )
+
+    va = VectorAssembler(
+        inputCols=["PSSM_r2_-3_S", "PSSM_central_0_P",
+            "PSSM_r1_1_Y", "PSSM_r1_-3_R", "PSSM_r1_0_R",
+            "PredSS_central_2_indexed"],
+        outputCol="features"
+    )
+
+    return Pipeline(stages=[si, va])
+    \end{lstlisting}
