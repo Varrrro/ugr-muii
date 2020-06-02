@@ -1,0 +1,30 @@
+\section{Conclusiones}
+
+En este proyecto se han realizado muchas pruebas y se ha obtenido una gran
+cantidad de datos, de los cuáles se pueden extraer algunas conclusiones. La
+primera que salta a la vista viendo los tiempos de respuesta de los contenedores
+en ejecución, es que las aplicaciones contenerizadas pueden ser aptas para
+restricciones de tiempo real. En esta línea, si volvemos a observar los datos
+del cuadro \ref{tab:response-results}, la desviación típica en los tiempos en
+i386 es considerablemente inferior a la que se aprecia en arm32v7 en cualquiera
+de las situaciones (en ejecución, parado o pausado). En los tiempos de
+lanzamiento también se aprecia ésto, aunque la diferencia de desviaciones es
+menor, tal y como se ve en el cuadro \ref{tab:start-results}. Podríamos concluir
+entonces que i386 ofrece un comportamiento más determinista que arm32v7, al
+menos en los dispositivos usados.
+
+Por otra parte, considero que los tiempos de lanzamiento que se han registrado
+son demasiado elevados para sistemas con restricciones de tiempo real "duras",
+aunque sí podrían ser aptos para los que tengan restricciones "blandas". El
+principal problema lo encontramos en la poca consistencia de tiempos en todas
+las tareas de gestión de los contenedores, tal y como se aprecia en los
+resultados de los tiempos de respuesta para los contenedores parados y pausados
+y de los tiempos de lanzamiento.
+
+En definitiva, considero que los resultados son esperanzadores para la
+aplicación de las tecnologías de contenerización a la automatización de la
+industria, aunque creo que sería necesario construir herramientas específicas
+para este caso de uso, como pueden ser motores y orquestadores de contenedores
+que tengan en cuenta y garanticen los requisitos de tiempo de cada aplicación
+contenerizada. Además, la plataforma de ARM necesita de mejoras en el campo del
+trabajo con contenedores para poder ser una opción fiable.

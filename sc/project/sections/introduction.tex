@@ -1,0 +1,49 @@
+\section{Introducción}
+
+Hoy en día, la Industria 4.0 es uno de los principales campos de trabajo e
+investigación tecnológica. Podríamos decir, de forma muy simplificada, que el
+objetivo es automatizar por completo los procesos productivos para aumentar el
+rendimiento y la calidad de los productos y servicios, así como reducir los
+costes. Para que estos procesos sean autosuficientes y autogestionados, es
+necesario aplicar técnicas de inteligencia artificial al control de las
+instalaciones físicas, entrenando modelos de toma de decisiones con los datos
+obtenidos de sensores situados en las instalaciones. Debido a que se trata de
+grandes cantidades de datos y que estas técnicas suelen requerir de una alta
+capacidad de computación, no sería extraño pensar en el \textit{cloud} como la
+plataforma ideal. No obstante, el transporte de todos estos datos de forma
+constante a través de la red, en algunos casos incluso proveniendo de múltiples
+fábricas o instalaciones, pone una gran carga sobre la infraestructura de red y
+congestiona el tráfico, además de que estas comunicaciones suponen una latencia
+inevitable que en muchos casos es también inaceptable.
+
+La solución más aceptada consiste en llevar todos estos nuevos procesos a las
+propias fábricas e instalaciones, surgiendo nuevos modelos de computación como
+\textit{edge} y \textit{fog computing}. Estas nuevas arquitecturas plantean que
+los sistemas de control críticos, con restricciones de tiempo real, convivan con
+los procesos de inteligencia artificial y otro software no crítico, compartiendo
+incluso el mismo hardware. Es esencial que estos sistemas de criticalidad mixta
+aseguren que los requisitos de tiempo del software crítico se cumplan.
+
+Se han realizado algunos experimentos y demostraciones de ejecución de estos
+sistemas de criticalidad mixta sobre un mismo microprocesador haciendo uso de
+hipervisores avanzados, que permiten lanzar máquinas virtuales sobre el hardware
+asignando los recursos en función de los requisitos de cada una. Sin embargo, el
+modelo planteado por el \textit{fog computing} supone un balanceo de la carga
+entre todos los nodos contectados a la red, lo que nos hace plantearnos el uso
+de contenedores como técnica de virtualización capaz de permitir esta
+replicación y distribución eficiente de procesos.
+
+La idea principal detrás de los contenedores es empaquetar cada aplicación con
+todo lo que ésta necesita para funcionar correctamente en un contenedor aislado
+del resto de procesos. De esta forma, distintos contenedores comparten el mismo
+kernel para las llamadas de bajo nivel (en contraposición con las máquinas
+virtuales, en las que cada una tiene un sistema operativo completo y comparten
+solo el hardware) y no pueden afectar al funcionamiento del sistema fuera de su
+propio contenedor, aumentando la seguridad e integridad del mismo.
+
+Debido a esto, con este proyecto se ha querido comprobar el determinismo de los
+procesos contenerizados y ejecutados sobre Docker, que es el principal motor de
+contenedores actualmente. Se ha prestado atención, sobre todo, a los tiempos de
+lanzamiento, pausa y otros mecanismos de Docker para el control de los procesos.
+En las siguientes secciones de este documento, se explican en detalle las
+pruebas que se han llevado a cabo y se presentan sus resultados.

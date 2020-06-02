@@ -1,0 +1,132 @@
+\section{Pruebas realizadas}
+
+Como ya se ha indicado en la sección anterior, las pruebas que he llevado a cabo
+se centran en determinar los tiempos relativos a los procesos contenerizados y
+ejecutados sobre Docker. Las pruebas se han realizado sobre los dos siguientes
+dispositivos:
+
+\begin{itemize}
+      \item Raspberry Pi 4 con procesador ARM Cortex A72 @ 1.5 GHz y 4 GB de RAM
+            ejecutando una versión de Raspbian Lite modificada para la ejecución de
+            contenedores con Docker.
+      \item Portátil con procesador Intel Atom N270 @ 1.6 GHz y 1 GB de RAM
+            ejecutando una instalación mínima de Debian.
+\end{itemize}
+
+De esta forma, obtenemos resultados para dos plataformas diferentes (armv7 e
+i386), lo que nos permite comparar su rendimiento. Los sistemas operativos de
+ambos dispositvos son de 32 bits~\footnote{Aunque el procesador de la Raspberry
+      Pi 4 soporta la ejecución en 64 bits, el sistema operativo Raspbian solo está
+      disponible en 32 bits.}.
+
+Para no afectar al rendimiento de los dispositivos y, por tanto, a las pruebas,
+la ejecución de éstas se lleva a cabo desde un ordenador distinto y conectado a
+los dispostivos de prueba mediante una conexión física vía Ethernet. Es en este
+ordenador donde se ejecutan los \textit{scripts} de Python encargados de
+conectarse al dispositivo de prueba vía SSH y ejecutar todo lo necesario para
+las pruebas. Gracias a estos \textit{scripts}, la ejecución de las pruebas está
+automatizada en su totalidad, aunque es necesario conectarse a los dispositivos
+previamente para construir las imágenes Docker. Se han utilizado las librerías
+de Python de \textit{pandas} (creación de \textit{data frames} y almacenamiento
+como CSV) y \textit{paramiko} (ejecución de comandos vía SSH). El código
+completo puede encontrarse en el repositorio de GitHub creado para el
+proyecto~\footnote{Repositorio del proyecto:
+      \url{https://github.com/Varrrro/container-metrics}}.
+
+Además de usar plataformas distintas, también he llevado a cabo la
+implementación de los procesos contenerizados que se prueban en distintos
+lenguajes: C, Go y Rust. Todos ellos son lenguajes compilados y orientados a la
+programación de sistemas. Cabe destacar que para los contenedores de Go se ha
+usado como imagen base Alpine Linux, que es una distribución mínima, en
+contraposición con la imagen base de Debian para los contenedores de C y Rust
+debido a la inexistencia de una imagen base de Alpine para estos lenguajes.
+
+Las pruebas realizadas se han agrupado en dos conjuntos según los tiempos que
+están diseñadas para medir: lanzamiento de los contenedores y respuesta de los
+mismos. En las siguientes subsecciones, se va a detallar en qué consiste cada
+prueba y cómo se ha llevado a cabo.
+
+\subsection{Tiempo de lanzamiento}
+
+El motor de contenedores Docker incorpora una funcionalidad para inspeccionar
+los contenedores que se han ejecutado o están en ejecución. Esta información se
+obtiene con el comando \texttt{docker inspect} y devuelve, entre otras cosas,
+las marcas de tiempo del inicio del contenedor, el inicio del proceso que
+contiene y su final. Usando estas marcas de tiempo, se puede calcular el tiempo
+de lanzamiento del contenedor (desde que se lanza hasta que comienza el proceso
+que contiene) y el tiempo de ejecución del proceso contenido, que son los datos
+deseados.
+
+Para la realización de estas pruebas, se ha implementado un proceso muy sencillo
+en los 3 lenguajes ya indicados que simplemente envía un paquete UDP de vuelta
+al ordenador desde el que se ejecutan las pruebas. El proceso de prueba definido
+en el \textit{script} queda entonces así:
+
+\begin{enumerate}
+      \item Lanzar el contenedor.
+      \item Esperar a recibir el paquete UDP que envía el contenedor, indicando
+            que ha terminado su ejecución.
+      \item Ejecutar \texttt{docker inspect} para obtener las marcas de tiempo.
+      \item Calcular los tiempos de lanzamiento y ejecución.
+      \item Eliminar el contenedor para poder lanzarlo de nuevo.
+\end{enumerate}
+
+Este proceso se realiza un número concreto de veces para cada implementación del
+contenedor de prueba. Este número de iteraciones se especifica como argumento en
+la ejecución del \textit{script}. Al terminar la ejecución de la batería de
+pruebas, los resultados recopilados se guardan en un fichero CSV.
+
+\subsection{Tiempo de respuesta}
+
+En este caso, lo que se quiere comprobar es el tiempo de respuesta de un proceso
+contenerizado partiendo desde distintos estados en los que se pueden encontrar
+los contenedores Docker: en ejecución, pausados y parados. El primero de estos
+estados es obvio, se trata de un proceso corriendo de forma ininterrumpida. Por
+otra parte, al pausar y parar un contenedor, lo que hace Docker es enviar una
+señal SIGSTOP o SIGKILL al proceso, respectivamente. Aunque el contenedor como
+tal sigue existiendo, su proceso no está en ejecución y deja de consumir tantos
+recursos.
+
+Para hacer estas pruebas, se ha implementado un sencillo servidor UDP que
+responde al remitente y que actuará como proceso cuyo tiempo de respuesta se
+mide. Al igual que con las otras pruebas, este proceso se ha implementado en
+cada uno de los lenguajes propuestos. Además, como se tiene que alterar el
+estado de este contenedor, es necesario un proceso "maestro" que se ejecute en
+el dispositivo de prueba y que se encargue de ello. Debido a la naturaleza de
+las pruebas, se han implementado tres versiones de este proceso maestro, que son
+las siguientes:
+
+\begin{itemize}
+      \item Lanza el proceso de prueba y lo mantiene funcionando.
+      \item Mantiene el proceso de prueba parado y lo lanza de nuevo para cada
+            petición recibida.
+      \item Mantiene el proceso de prueba pausado y lo reanuda para cada petición
+            recibida.
+\end{itemize}
+
+Además de controlar el estado del contenedor de prueba, este proceso maestro
+también actúa como \textit{proxy}, redirigiendo los paquetes recibidos al
+contenedor y las respuestas de éste, al remitente. Con todo esto, el proceso de
+prueba definido en el \textit{script} queda así:
+
+\begin{enumerate}
+      \item Enviar un paquete UDP al maestro.
+      \item En caso de ser la versión con pausa o parada, el maestro relanza o
+            reanuda el contenedor de prueba.
+      \item El maestro reenvía el paquete UDP al contenedor.
+      \item El maestro espera hasta recibir la respuesta del contenedor.
+      \item El maestro reenvía la respuesta al ordenador desde el que se ejecutan
+            las pruebas para que calcule el tiempo de respuesta.
+      \item En caso de ser la versión con pausa o parada, el maestro pausa o para
+            el contenedor.
+\end{enumerate}
+
+Al igual que con las pruebas del tiempo de lanzamiento, todo este proceso se
+repite un número indicado de veces para cada combinación de implementación del
+contenedor de prueba y versión del proceso maestro.
+
+Cabe destacar que, como se puede apreciar viendo el proceso de prueba definido,
+no se tiene en cuenta el tiempo que se tarda en parar o pausar el contenedor.
+Esto se debe a que, en un hipotético sistema de control distribuido, no nos
+afecta el tiempo de parada, sino que lo que nos interesa es ver el tiempo que
+tarda en responder desde un estado de "hibernación".
