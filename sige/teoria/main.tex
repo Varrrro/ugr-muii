@@ -1,0 +1,36 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+\usepackage{graphicx}
+\PassOptionsToPackage{hyphens}{url}\usepackage[colorlinks]{hyperref}
+\usepackage[bottom]{footmisc}
+\usepackage[nottoc]{tocbibind}
+
+\begin{document}
+\begin{titlepage}
+    \centering
+    \includegraphics[width=0.5\textwidth]{images/logo-ugr.png}\par
+    \vspace{1cm}
+    {\Large\scshape Sistemas Inteligentes para la Gestión en la Empresa \par}
+    {\huge\bfseries Procesamiento de lenguaje natural: \textit{word embeddings}
+        \par}
+    \vspace{0.2cm}
+    {\scshape Trabajo de teoría \par}
+    \vfill
+    {\large Víctor Vázquez Rodríguez  \par}
+    {victorvazrod@correo.ugr.es \par}
+    \vfill
+    {\large Máster Universitario en Ingeniería Informática \par}
+    \vspace{0.2cm}
+    {Curso 2019/20 \par}
+\end{titlepage}
+
+\tableofcontents\newpage
+
+\input{sections/introduction.tex}\newpage
+\input{sections/one-hot-limitations.tex}\newpage
+\input{sections/techniques.tex}\newpage
+
+\bibliographystyle{ieeetr}
+\bibliography{sources}
+\end{document}

@@ -1,0 +1,27 @@
+\section{Introducción}
+
+Hoy en día, el procesamiento de lenguaje natural (NLP por sus siglas en inglés)
+es uno de los principales campos de estudio en inteligencia artificial y
+\textit{deep learning}. Este campo se centra en la interpretación del lenguaje
+humano por parte de ordenadores, permitiendo cosas como el control de
+dispositivos con la voz o el análisis y traducción de textos.
+
+Un aspecto muy importante a la hora de procesar y analizar lenguaje natural es
+la representación que usamos del mismo, concretamente, cómo representamos las
+palabras de forma que un ordenador pueda trabajar con ellas de forma eficiente y
+obtener información relevante de su significado y su contexto. Desde el punto de
+vista del \textit{machine learning}, podríamos interpretar las palabras de un
+texto (o de cualquier conjunto de palabras) como valores de una variable
+categórica, donde cada palabra distinta supone una categoría. Uno de los métodos
+más comunes y usados para representar este tipo de variables es la codificación
+\textit{one-hot}, que nos permite obtener un vector de valores númericos para
+cada categoría.
+
+No obstante, esta técnica presenta grandes limitaciones para el procesamiento de
+lenguaje natural, de forma que surgen los \textit{word embeddings}. Se trata de
+modelos apoyados en las redes neuronales para la proyección o incrustación
+(traducción literal de \textit{embedding}) de palabras en un espacio
+vectorial~\cite{definition}. En la sección \ref{sec:one-hot-limitations} de este
+documento se explican las limitaciones de la codificación \textit{one-hot} y
+por qué son necesarios los \textit{word embeddings}, mientras que en la sección
+\ref{sec:techniques} se exponen algunas de las técnicas más utilizadas.

@@ -1,0 +1,58 @@
+\section{Limitaciones de la codificación \textit{one-hot}}
+\label{sec:one-hot-limitations}
+
+La codificación \textit{one-hot} es un método muy sencillo para la
+representación de los distintos valores de una variable categrórica como
+vectores. Si tenemos $N$ categorías diferentes, la codificación \textit{one-hot}
+de una de ellas sería un vector de tamaño $N$ con $N-1$ ceros y un uno en la
+posición cuyo índice representa la categoría. Para entender mejor su
+funcionamiento y, además, su aplicación a la representación de palabras, vamos a
+ver un ejemplo.
+
+Consideramos las frases \textit{Have a good day} y \textit{Have a great day}. Si
+construimos el vocabulario de estas frases, obtenemos el siguiente conjunto:
+
+\begin{equation}
+    V = \{Have, a, good, great, day\}
+\end{equation}
+
+Aplicando la codificación \textit{one-hot}, obtenemos las siguientes
+representaciones vectoriales para cada una de las palabras del vocabulario $V$:
+
+\begin{itemize}
+    \item $Have = [1, 0, 0, 0, 0]$
+    \item $a = [0, 1, 0, 0, 0]$
+    \item $good = [0, 0, 1, 0, 0]$
+    \item $great = [0, 0, 0, 1, 0]$
+    \item $day = [0, 0, 0, 0, 1]$
+\end{itemize}
+
+Estos vectores forman parte de un espacio con 5 dimensiones, donde cada vector
+es la representación de una palabra en dicho espacio. Cuando nos fijamos en
+el ejemplo y en esta visualización, nos damos cuenta de las dos limitaciones
+principales de la codificación \textit{one-hot}~\cite{one-hot}:
+
+\begin{itemize}
+    \item Para variables con una alta cardinalidad, como puede ser el caso del
+          ejemplo per con un texto con muchas palabras, la dimensionalidad de los
+          vectores se vuelve demasiado grande.
+    \item Los vectores obtenidos no tienen proyecciones sobre ninguna otra
+          dimensión excepto la suya, de forma que la distancia entre todos ellos es la
+          misma.
+\end{itemize}
+
+En concreto, este último punto es especialmente problemático cuando lo que
+estamos representando son palabras. Volviendo al ejemplo, los vectores de
+\textit{good} y \textit{great} tienen la misma distancia entre ellos que
+\textit{day} y \textit{Have}, dando a entender que son igual de similares, lo
+cuál no es cierto. Con la codificación \textit{one-hot} perdemos la información
+sobre la similitud entre palabras y su contexto. Los \textit{word embeddings}
+surgen para solucionar esto, permitiendo obtener representaciones vectoriales de
+las palabras que reflejen en el espacio su relación con otras (significado,
+similitud). No se trata solo de representar las palabras como vectores, sino
+también de poder aplicar operaciones cartesianas sobre ellos para trabajar con
+el lenguaje de una forma relativamente sencilla para el ordenador.
+
+Estos \textit{embeddings} se suelen conseguir entrenando modelos, algunos de
+ellos basados en redes neuronales. En la siguiente sección se va a explicar el
+funcionamiento de los más comunes.
