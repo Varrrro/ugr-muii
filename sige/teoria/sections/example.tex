@@ -1,0 +1,170 @@
+\section{Ejemplo práctico}
+\label{sec:example}
+
+Para entender mejor como funcionan los \textit{word embeddings} en las tareas de
+NLP, se ha hecho una implementación sencilla en Python con Keras, de la cuál se
+muestran en esta sección los fragmentos más
+relevantes\footnote{\href{https://colab.research.google.com/drive/18AUH4FhJLhtD1LyWpHcVVL2xvw_n5wN1?usp=sharing}{Cuaderno
+        completo}}.
+
+En este ejemplo, se usa el conjunto de datos de noticias de Reuters que
+incorpora Keras, que contiene 11228 noticias de 46 categorías diferentes. El
+objetivo es entrenar una red neuronal que sea capaz de predecir la categoría de
+una noticia en base a su contenido.
+
+Los \textit{word embeddings} se han realizado mediante una capa dedicada al
+inicio de la red, tal y como se explicaba en la subsección
+\ref{subsec:embedding-layer}. Para esta capa, he realizado dos implementaciones
+distintas:
+
+\begin{itemize}
+    \item Usando un modelo de GloVe ya entrenado para fijar los pesos.
+    \item Entrenando los pesos desde cero.
+\end{itemize}
+
+De esta forma, puedo comparar los resultados obtenidos para dos de los
+acercamientos más comunes a la hora de trabajar con \textit{embeddings} y que ya
+se explicaron en el inicio de la sección \ref{sec:techniques}. El resto de la
+red es idéntica en ambos casos.
+
+Para empezar, hay que cargar y preparar los datos. Keras nos proporciona el
+conjunto de datos como una lista de secuencias, donde cada secuencia representa
+a una noticia y contiene números enteros como IDs de las palabras de dicha
+noticia (las palabras como tal no se muestran, pero es irrelevante). Además,
+estos IDs están ordenados por ocurrencia en el conjunto entero, de forma que la
+palabra con el ID <<1>> es la que más aparece. Al cargar los datos, debemos
+indicar con \texttt{num\_words} la cantidad de palabras diferentes que queremos,
+seleccionándose siempre las de mayor ocurrencia. En este caso, se han
+seleccionado las 20000 palabras más comunes, por lo que en el conjunto de datos
+obtenido solo habrá IDs del 0 al 19999. Después, es necesario acotar la longitud
+de las secuencias al tamaño deseado con la función \texttt{pad\_sequences}. En
+este caso, este tamaño es de 1000 palabras. Por último, se obtiene la
+codificación \textit{one-hot} de las etiquetas. Todo esto se puede ver en el
+siguiente fragmento de código:
+
+\begin{lstlisting}
+from keras.datasets import reuters
+from keras.preprocessing.sequence import pad_sequences
+from keras.utils import to_categorical
+    
+(x_train, y_train), (x_test, y_test) = reuters.load_data(num_words=MAX_FEATURES)
+word_index = reuters.get_word_index()
+    
+x_train = pad_sequences(x_train, maxlen=MAX_LEN)
+x_test = pad_sequences(x_test, maxlen=MAX_LEN)
+    
+y_train = to_categorical(y_train, NUM_CLASSES)
+y_test = to_categorical(y_test, NUM_CLASSES)
+\end{lstlisting}
+
+Ahora, leemos el fichero con el modelo de GloVe pre-entrenado. El modelo elegido
+realiza \textit{embeddings} de 100 dimensiones, es decir, las representaciones
+vectoriales obtenidas de las palabras tienen 100 dimensiones. En el siguiente
+fragmento de código se lee este modelo del fichero y se guardan los
+\textit{embeddings} de cada palabra en un mapa \texttt{embeddings\_index} como
+\textit{arrays}.
+
+\begin{lstlisting}
+import os
+import numpy as np
+    
+embeddings_index = {}
+f = open(os.path.join('.', 'glove.6B.100d.txt'))
+for line in f:
+    values = line.split()
+    word = values[0]
+    coefs = np.asarray(values[1:], dtype='float32')
+    embeddings_index[word] = coefs
+f.close()
+\end{lstlisting}
+
+Ahora, se debe usar este \texttt{embeddings\_index} para construir una matriz
+que se le pueda asignar a la capa de \textit{embedding} de la red. Para ello, se
+recorre el índice de palabras \texttt{word\_index} del conjunto de datos
+obtenido de Keras y se comprueba si existen dichas palabras en el
+\texttt{embeddings\_index} (recordar que se trabaja con IDs numéricos, no con
+las palabras reales). En caso afirmativo, se copia el \textit{array} con el
+\textit{embedding} de la palabra a su fila correspondiente en la matriz,
+si no, se rellena esa fila con ceros.
+
+\begin{lstlisting}
+embedding_matrix = np.zeros((len(word_index) + 1, EMBEDDING_DIM))
+for word, i in word_index.items():
+    embedding_vector = embeddings_index.get(word)
+    if embedding_vector is not None:
+        # words not found in embedding index will be all-zeros.
+        embedding_matrix[i] = embedding_vector
+\end{lstlisting}
+
+Una vez hecho esto, ya podemos construir la red inicializando los pesos de la capa
+de \textit{embedding} con la matriz construida e indicando que esta capa no se
+entrena (\texttt{trainable=False}), haciendo que sea fija. El resto de la red es
+una red convolucional sencilla con salida \textit{softmax}. Después de entrenar
+durante 5 épocas, conseguimos un \textit{accuracy} de 0.66 sobre el conjunto de
+prueba, bastante bajo.
+
+\begin{lstlisting}
+from keras.models import Sequential
+from keras.layers import Embedding, Conv1D, MaxPooling1D, Flatten, Dense, Dropout
+from keras.losses import categorical_crossentropy
+    
+fixed_model = Sequential()
+fixed_model.add(Embedding(len(word_index) + 1,
+                        EMBEDDING_DIM,
+                        weights=[embedding_matrix],
+                        input_length=MAX_LEN,
+                        trainable=False))
+fixed_model.add(Conv1D(128, 5, activation='relu'))
+fixed_model.add(MaxPooling1D(5))
+fixed_model.add(Conv1D(128, 5, activation='relu'))
+fixed_model.add(MaxPooling1D(5))
+fixed_model.add(Conv1D(128, 5, activation='relu'))
+fixed_model.add(MaxPooling1D(35))
+fixed_model.add(Flatten())
+fixed_model.add(Dense(128, activation='relu'))
+fixed_model.add(Dense(NUM_CLASSES, activation='softmax'))
+    
+fixed_model.compile(loss=categorical_crossentropy,
+                    optimizer='adam',
+                    metrics=['accuracy'])
+
+fixed_model.fit(x_train, y_train,
+                validation_split=0.1,
+                epochs=5,
+                batch_size=32)
+\end{lstlisting}
+
+Probamos ahora a entrenar una capa de \textit{embedding} desde cero. Como se
+puede ver en el siguiente fragmento de código, la definición de la red es
+idéntica excepto que no se predefine una matriz de pesos para la capa de
+\textit{embedding}. Entrenamos esta red durante 5 épocas también y el modelo
+resultante obtiene 0.72 de \textit{accuracy} sobre el conjunto de prueba.
+
+\begin{lstlisting}
+trained_model = Sequential()
+trained_model.add(Embedding(len(word_index) + 1,
+                            EMBEDDING_DIM,
+                            input_length=MAX_LEN))
+trained_model.add(Conv1D(128, 5, activation='relu'))
+trained_model.add(MaxPooling1D(5))
+trained_model.add(Conv1D(128, 5, activation='relu'))
+trained_model.add(MaxPooling1D(5))
+trained_model.add(Conv1D(128, 5, activation='relu'))
+trained_model.add(MaxPooling1D(35))
+trained_model.add(Flatten())
+trained_model.add(Dense(128, activation='relu'))
+trained_model.add(Dense(NUM_CLASSES, activation='softmax'))
+    
+trained_model.compile(loss=categorical_crossentropy,
+                    optimizer='adam',
+                    metrics=['accuracy'])
+
+trained_model.fit(x_train, y_train,
+                validation_split=0.1,
+                epochs=5,
+                batch_size=32)
+\end{lstlisting}
+
+El hecho de que el resultado haya sido mejor para la capa de \textit{embedding}
+entrenada que para la predefinida no indica que se trate de una acercamiento más
+correcto, sino que es mejor para este ejemplo concreto.
