@@ -39,6 +39,12 @@
 \usepackage{graphicx}
 \graphicspath{{images/}}
 
+% Enable graphics placement.
+\usepackage{float}
+
+% Apply color to tables.
+\usepackage{colortbl}
+
 % Set title page background image.
 \usepackage{eso-pic}
 \newcommand\BackgroundPic{%
@@ -64,6 +70,7 @@
 \input{prelims/table-of-contents.tex}
 
 \mainmatter
+\input{chapters/01-introduction.tex}
 
 \backmatter
 %\bibliographystyle{ieeetr}
