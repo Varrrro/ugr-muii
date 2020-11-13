@@ -57,6 +57,10 @@
 			\vfill
 }}}
 
+% Add the euro symbol.
+\usepackage{marvosym}
+\DeclareUnicodeCharacter{20AC}{\EUR{}}
+
 \usepackage{hyperref}
 \usepackage{booktabs}
 \usepackage{bookmark}
@@ -71,6 +75,10 @@
 
 \mainmatter
 \input{chapters/01-introduction.tex}
+
+\appendix
+\pdfbookmark[-1]{Apéndices}{appendix}
+\input{appendices/01-costs.tex}
 
 \backmatter
 %\bibliographystyle{ieeetr}
