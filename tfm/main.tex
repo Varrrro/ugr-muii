@@ -65,6 +65,9 @@
 \usepackage{booktabs}
 \usepackage{bookmark}
 
+% Change second level label item to a dash.
+\renewcommand{\labelitemii}{--}
+
 \begin{document}
 
 \frontmatter
@@ -81,7 +84,7 @@
 \input{appendices/01-costs.tex}
 
 \backmatter
-%\bibliographystyle{ieeetr}
-%\bibliography{sources}
+\bibliographystyle{ieeetr}
+\bibliography{sources}
 
 \end{document}

@@ -93,15 +93,15 @@ De cara a la realización de este trabajo, se han planteado los siguientes
 objetivos a cumplir:
 
 \begin{itemize}
-    \item Comprender los conceptos básicos sobre sistemas operativos de tiempo
-          real, algoritmos de planificación y sistemas de control industriales.
-    \item Analizar las soluciones de tiempo real basadas en GNU/Linux existentes.
-    \item Estudiar la viabilidad y rendimiento de las tecnologías de
-          contenerización para la ejecución de tareas con restricciones temporales.
-    \item Diseñar e implementar una herramienta de despliegue de tareas de
-          tiempo real mediante contenedores que sirva como prueba de concepto.
-    \item Caracterizar las prestaciones de la herramienta desarrollada,
-          identificando posibles aplicaciones y/o mejoras de la misma.
+      \item Comprender los conceptos básicos sobre sistemas operativos de tiempo
+            real, algoritmos de planificación y sistemas de control industriales.
+      \item Analizar las soluciones de tiempo real basadas en GNU/Linux existentes.
+      \item Estudiar la viabilidad y rendimiento de las tecnologías de
+            contenerización para la ejecución de tareas con restricciones temporales.
+      \item Diseñar e implementar una herramienta de despliegue de tareas de
+            tiempo real mediante contenedores que sirva como prueba de concepto.
+      \item Caracterizar las prestaciones de la herramienta desarrollada,
+            identificando posibles aplicaciones y/o mejoras de la misma.
 \end{itemize}
 
 Una parte relevante de los objetivos del presente proyecto están asociados al
@@ -125,6 +125,165 @@ apoyando su uso siempre que sea posible. Por ello, la herramienta planteada se
 diseñará en torno al despliegue de tareas en sistemas GNU/Linux.
 
 \section{Planificación}
+
+Tradicionalmente, la planificación de las tareas en proyectos de desarrollo de
+software se realizaba siguiendo un modelo en cascada, donde antes de avanzar a
+la siguiente fase (p. ej., diseño, desarrollo, prueba) se debían completar todas
+las tareas de la anterior. Además, se intentaba estimar con precisión el tiempo
+necesario para desarrollar cada tarea, con el fin de obtener una predicción
+precisa de cúando estaría terminado el proyecto. Este tipo de metodología en
+cascada, en la que se planifica la totalidad del proyecto de antemano, es muy
+rígida y, por tanto, hace que sea más difícil adaptarse a los cambios que
+suceden durante el desarrollo del proyecto. En los últimos años ha cobrado
+fuerza una alternativa: las metodlogías ágiles. Lo que se plantea es afrontar la
+planificación y ejecución de las tareas de forma iterativa. En SCRUM, una de las
+metodologías ágiles más conocidas, se eligen tareas a realizar a corto plazo, lo
+que permite modificar las tareas a realizar si fuera necesario. En
+\cite{casteren_waterfall_2017} se realiza una comparativa entre el modelo en
+cascada y las metodologías ágiles, llegando el autor a la conclusión de que
+estas últimas son siempre más eficaces para proyectos de pequeño y medio tamaño
+si se aplican de forma correcta. Es en los proyectos más complejos, donde hay
+múltiples equipos involucrados, en los que la aplicación de metodologías ágiles
+es más difícil y puede resultar ineficaz.
+
+Observando esto y sabiendo que este proyecto es de baja complejidad, hemos
+decidido aplicar SCRUM para la planificación y la gestión de las tareas del
+mismo. Según este modelo, el desarrollo del proyecto se realiza en iteraciones,
+las cuales se planifican de forma dinámica y sobre la marcha. Al inicio del
+proyecto, se identifican las tareas que se consideran necesarias para la
+consecución de los objetivos, formando una pila o \textit{backlog} de tareas.
+Los miembros del equipo estiman estas tareas en base a su experiencia. A
+diferencia del modelo tradicional, estas estimaciones no tienen que ser
+precisas, sino que lo que se busca es una medida orientativa del tamaño o
+complejidad de las tareas en relación con las demás. En muchos casos, para
+agilizar el proceso de estimación, se aplican juegos. Una vez definida esta pila
+de tareas, comienzan las iteraciones o \textit{sprints}, que suelen tener una
+duración pequeña, de 2 o 3 semanas. Antes de comenzar una nueva iteración, los
+miembros del equipo deciden qué tareas se van a acometer en la misma. La
+selección de estas tareas se puede basar en su estimación, su importancia o en
+el propio deseo de los miembros del equipo de realizarlas. Así, se realiza una
+planificación a corto plazo, lo que permite a los equipos tener mucho margen de
+reacción ante cambios en el proyecto (p. ej., cambios en los requisitos o
+problemas imprevistos). Una vez termina la iteración, el equipo evalúa el
+trabajo realizado, comprobando si las estimaciones que habían realizado al
+principio eran fidedignas, actualizando las de las tareas restantes si fuera
+necesario. Si se ha descubierto que se deben realizar más tareas de las
+inicialmente planteadas, éstas se pueden añadir a la pila entre iteraciones.
+
+Como se puede apreciar, el modelo de SCRUM se centra mucho en el trabajo
+colaborativo dentro del equipo, por lo que el modelo que hemos aplicado en este
+proyecto se puede considerar como un SCRUM adaptado al trabajo individual. Las
+iteraciones seguidas han sido de dos semanas y se ha usado un tablero Kanban
+para el seguimiento de las tareas. En la figura \ref{fig:01-kanban} se muestra
+el tablero usado. El objetivo de estos tableros es ofrecer una visión clara del
+estado del proyecto con un simple vistazo, para lo que ordenan las tareas en
+tres columnas: Por hacer (\textit{To do}), Haciendo (\textit{In progress}) y
+Hecho (\textit{Done}). A continuación, se listan las iteraciones realizadas con
+las tareas que se han acometido en cada una de ellas:
+
+\begin{figure}
+      \centering
+      \includegraphics[width=\textwidth]{01-introduction/kanban.png}
+      \caption{Muestra del tablero Kanban usado para el seguimiento de las tareas del proyecto}
+      \label{fig:01-kanban}
+\end{figure}
+
+\begin{itemize}
+      \item \textbf{Iteración 1} (06/07 - 20/07)
+            \begin{itemize}
+                  \item (Documentación) Estudiar el funcionamiento de los RTOS.
+                  \item (Documentación) Estudiar las soluciones de tiempo real
+                        para Linux.
+                  \item (Documentación) Estudiar las técnicas de diseño e
+                        implementación de tareas de control.
+                  \item (Documentación) Estudiar el uso de contenedores para
+                        tareas de tiempo real.
+            \end{itemize}
+      \item \textbf{Iteración 2} (20/07 - 03/08)
+            \begin{itemize}
+                  \item (Servidor) Implementar la obtención, inserción y
+                        eliminación de nodos.
+                  \item (Servidor) Implementar la obtención, inserción y
+                        eliminación de tareas.
+            \end{itemize}
+      \item \textbf{Iteración 3} (03/08 - 17/08)
+            \begin{itemize}
+                  \item (Servidor) Implementar el despliegue y la eliminación de
+                        tareas en los nodos.
+            \end{itemize}
+      \item \textbf{Iteración 4} (17/08 - 31/08)
+            \begin{itemize}
+                  \item (Servidor) Implementar la obtención, inserción y
+                        eliminación de tareas.
+                  \item (Servidor) Implementar el despliegue y la eliminación de
+                        tareas en los nodos.
+                  \item (Servidor) Implementar la actualización de nodos y
+                        tareas.
+                  \item (Librería) Implementar las funciones de manipulación de
+                        los atributos de planificación.
+                  \item (Librería) Crear imagen base.
+            \end{itemize}
+      \item \textbf{Iteración 5} (31/08 - 14/09)
+            \begin{itemize}
+                  \item (Servidor) Mejorar el manejo de los errores.
+                  \item (Servidor) Definir despliegue mediante contenedores.
+                  \item (Cliente) Implementar la gestión de los nodos.
+                  \item (Cliente) Implementar la gestión de las tareas.
+                  \item (Cliente) Implementar el despliegue de tareas.
+            \end{itemize}
+      \item \textbf{Iteración 6} (14/09 - 28/09)
+            \begin{itemize}
+                  \item (Servidor) Implementar el despliegue y la eliminación de
+                        tareas en los nodos.
+                  \item (Cliente) Implementar la gestión de los nodos.
+                  \item (Cliente) Implementar el despliegue de tareas.
+                  \item (Librería) Implementar las funciones de manipulación de
+                        los atributos de planificación.
+                  \item (Librería) Crear imagen base.
+            \end{itemize}
+      \item \textbf{Iteración 7} (28/09 - 12/10)
+            \begin{itemize}
+                  \item (Experimentación) Caracterizar el impacto de los
+                        contenedores sobre el rendimiento en tareas de tiempo
+                        real.
+            \end{itemize}
+      \item \textbf{Iteración 8} (12/10 - 26/10)
+            \begin{itemize}
+                  \item (Experimentación) Caracterizar el impacto de los
+                        contenedores sobre el rendimiento en tareas de tiempo
+                        real.
+            \end{itemize}
+      \item \textbf{Iteración 9} (26/10 - 09/11)
+            \begin{itemize}
+                  \item (Experimentación) Caracterizar el rendimiento del
+                        sistema desarrollado.
+            \end{itemize}
+      \item \textbf{Iteración 10} (09/11 - 23/11)
+            \begin{itemize}
+                  \item (Servidor) Escribir pruebas de integración.
+                  \item (Servidor) Definir flujo de integración continua.
+                  \item (Cliente) Escribir pruebas de integración.
+                  \item (Cliente) Definir flujo de integración continua.
+                  \item (Librería) Definir flujo de integración continua.
+            \end{itemize}
+\end{itemize}
+
+Como se puede apreciar, las tareas se han diferenciado según su tipo o el
+componente del sistema desarrollado al que se refieren. Además, para algunas de
+estas tareas ha sido necesario dedicar más de una iteración. En el caso de la
+tarea de implementación de las operaciones de obtención, inserción y eliminación
+de tareas, se tuvo que volver a incorporar en la iteración 4 debido a algunos
+errores cometidos en la implementación y que se detectaron más tarde. Otro caso
+similar fue la implementación de la funcionalidad de despliegue de tareas en los
+nodos. En el código inicialmente escrito en las iteraciones 3 y 4, esta
+operación se llevaba a cabo abriendo directamente una conexión SSH con el nodo
+objetivo y ejecutando los comandos de despliegue, emulando lo que haría un
+operario humano. Posteriormente, se llegó a la conclusión de que esta
+implementación se podía mejorar la usar la librería oficial de Docker para
+Python, con la cuál se podía establecer una conexión al motor Docker del nodo
+remoto para realizar el despliegue. Estas situaciones, junto con otras dadas en
+más tareas, reflejan fielmente la capacidad de adaptarse a los imprevistos que
+ofrece SCRUM que ya hemos comentado anteriormente.
 
 \section{Material y métodos}
 
@@ -161,8 +320,6 @@ referenciar los \textit{issues} ya mencionados en los mensajes de
 la que se engloban. La gestión del proyecto es, por tanto, más directa y
 sencilla.
 
-\textbf{Incorporar imagen del tablero del proyecto de GitHub}
-
 Los diagramas que se presentan a lo largo de este trabajo, incluidos los que
 componen el diseño de la herramienta desarrollada y sus componentes, se han
 creado con la herramienta online \textbf{draw.io}. Al integrarse directamente
@@ -180,32 +337,32 @@ elección. En este proyecto, se usan varias de estas librerías para facilitar l
 implementación de algunos aspectos de la herramienta. Destacamos las siguientes:
 
 \begin{itemize}
-    \item \textbf{hug} - Escritura de APIs sencilla y sin ataduras. Esta
-          librería trata de competir con otras más conocidas como Flask, proponiendo
-          un modelo mucho más simple y dando más libertad al desarrollador.
-    \item \textbf{click} - Más que una librería, se trata de un
-          \textit{framework} para la implementación de aplicaciones de línea de
-          comandos (CLI). Ofrece todas las utilidades que se pueden necesitar para
-          este tipo de aplicaciones, como es la generación automática de páginas de
-          ayuda.
-    \item \textbf{marshmallow} - Esta librería permite la sencilla
-          deserialización y serialización de objetos JSON a objetos Python. Esto es
-          especialmente útil al trabajar con servicios web, ya que se pueden leer los
-          datos JSON recibidos y validarlos frente a un esquema de datos definido por
-          el desarrollador.
-    \item \textbf{pymongo} - Ejecución de consultas sobre bases de datos
-          MongoDB, que son las usadas en este proyecto.
-    \item \textbf{paramiko} - Herramientas para trabajar con SSH desde Python.
-          Esencial para el despliegue de las tareas sobre los nodos.
-    \item \textbf{docker} - La librería oficial de Docker para Python. Con ella,
-          se puede conectar con un servidor Docker (local o remoto) para ejecutar
-          operaciones de construcción de imágenes o lanzamiento de contenedores.
-    \item \textbf{requests} - Es la librería más conocida para la realización de
-          peticiones HTTP en Python.
-    \item \textbf{unittest} - Aunque no se trata de una librería externa como
-          las demás, ya que forma parte de la librería estándar de Python, merece ser
-          destacada por ser la utilizada para la escritura y ejecución de las pruebas
-          del código desarrollado.
+      \item \textbf{hug} - Escritura de APIs sencilla y sin ataduras. Esta
+            librería trata de competir con otras más conocidas como Flask, proponiendo
+            un modelo mucho más simple y dando más libertad al desarrollador.
+      \item \textbf{click} - Más que una librería, se trata de un
+            \textit{framework} para la implementación de aplicaciones de línea de
+            comandos (CLI). Ofrece todas las utilidades que se pueden necesitar para
+            este tipo de aplicaciones, como es la generación automática de páginas de
+            ayuda.
+      \item \textbf{marshmallow} - Esta librería permite la sencilla
+            deserialización y serialización de objetos JSON a objetos Python. Esto es
+            especialmente útil al trabajar con servicios web, ya que se pueden leer los
+            datos JSON recibidos y validarlos frente a un esquema de datos definido por
+            el desarrollador.
+      \item \textbf{pymongo} - Ejecución de consultas sobre bases de datos
+            MongoDB, que son las usadas en este proyecto.
+      \item \textbf{paramiko} - Herramientas para trabajar con SSH desde Python.
+            Esencial para el despliegue de las tareas sobre los nodos.
+      \item \textbf{docker} - La librería oficial de Docker para Python. Con ella,
+            se puede conectar con un servidor Docker (local o remoto) para ejecutar
+            operaciones de construcción de imágenes o lanzamiento de contenedores.
+      \item \textbf{requests} - Es la librería más conocida para la realización de
+            peticiones HTTP en Python.
+      \item \textbf{unittest} - Aunque no se trata de una librería externa como
+            las demás, ya que forma parte de la librería estándar de Python, merece ser
+            destacada por ser la utilizada para la escritura y ejecución de las pruebas
+            del código desarrollado.
 \end{itemize}
 
 Además de estas librerías, se han usado otras para el análisis y formateo del
@@ -228,12 +385,12 @@ ofrece. Además, el lenguaje de consultas es mucho más claro e intuitivo que SQ
 permitiendo realizar consultas de envergadura similar.
 
 \begin{figure}[H]
-    \centering
-    \includegraphics[width=0.7\textwidth]{01-introduction/tools.png}
-    \caption{Logotipos de las herramientas utilizadas. De izquierda a derecha y%
-        de arriba a abajo: Python, Docker, Raspberry Pi, GitHub, VS Code y
-        draw.io}
-    \label{fig:01-tools}
+      \centering
+      \includegraphics[width=0.7\textwidth]{01-introduction/tools.png}
+      \caption{Logotipos de las herramientas utilizadas. De izquierda a derecha y%
+            de arriba a abajo: Python, Docker, Raspberry Pi, GitHub, VS Code y
+            draw.io}
+      \label{fig:01-tools}
 \end{figure}
 
 La idea principal en torno a la cual gira este trabajo es la del uso de
@@ -255,24 +412,24 @@ de bajo coste y muy versátil, pudiendo usarse para infinidad de aplicaciones.
 Las características detalladas de esta plataforma se pueden ver en la tabla \ref{tab:01-raspberry-specs}.
 
 \begin{table}[H]
-    \centering
-    \begin{tabular}{ |>{\columncolor[gray]{0.8}}l|p{0.5\textwidth}| }
-        \hline
-        \textbf{Procesador}          & Cortex-A72                \\
-        \hline
-        \textbf{Arquitectura}        & ARMv7                     \\
-        \hline
-        \textbf{Número de núcleos}   & 4                         \\
-        \hline
-        \textbf{Frecuencia de reloj} & 1500 MHz                  \\
-        \hline
-        \textbf{RAM}                 & 4 GB                      \\
-        \hline
-        \textbf{Sistema operativo}   & Raspberry Pi OS Lite 4.19 \\
-        \hline
-    \end{tabular}
-    \caption{Especificaciones de la Raspberry Pi usada en el trabajo}
-    \label{tab:01-raspberry-specs}
+      \centering
+      \begin{tabular}{ |>{\columncolor[gray]{0.8}}l|p{0.5\textwidth}| }
+            \hline
+            \textbf{Procesador}          & Cortex-A72                \\
+            \hline
+            \textbf{Arquitectura}        & ARMv7                     \\
+            \hline
+            \textbf{Número de núcleos}   & 4                         \\
+            \hline
+            \textbf{Frecuencia de reloj} & 1500 MHz                  \\
+            \hline
+            \textbf{RAM}                 & 4 GB                      \\
+            \hline
+            \textbf{Sistema operativo}   & Raspberry Pi OS Lite 4.19 \\
+            \hline
+      \end{tabular}
+      \caption{Especificaciones de la Raspberry Pi usada en el trabajo}
+      \label{tab:01-raspberry-specs}
 \end{table}
 
 El sistema operativo de este dispositivo es GNU/Linux (concretamente, basado en
@@ -281,10 +438,10 @@ Debian), y se le ha aplicado la revisión 24 del parche de tiempo real
 planificación de procesos apropiativa.
 
 \begin{figure}
-    \centering
-    \includegraphics[width=0.8\textwidth]{01-introduction/raspberry-pi.jpg}
-    \caption{Raspberry Pi 4B utilizada en el trabajo}
-    \label{fig:01-raspberry-pi}
+      \centering
+      \includegraphics[width=0.8\textwidth]{01-introduction/raspberry-pi.jpg}
+      \caption{Raspberry Pi 4B utilizada en el trabajo}
+      \label{fig:01-raspberry-pi}
 \end{figure}
 
 \section{Estructura de la memoria}
@@ -300,11 +457,11 @@ en lo relativo a los sistemas confiables, las tareas de tiempo real y las
 tecnologías de virtualización. Se presentan otros estudios interesantes llevados
 a cabo en esta área y se introducen todos los conceptos relevantes.
 
-En la sección 3, se aborda el diseño de una herramienta para el despliegue y
+En el capítulo 3, se aborda el diseño de una herramienta para el despliegue y
 seguimiento de tareas de tiempo real en entornos distribuidos, así como su
 implementación y prueba. Se presentan los resultados obtenidos y se discute
 sobre los mismos.
 
-En la sección 4, se realiza una revisión del proyecto completo y se presentan
+En el capítulo 4, se realiza una revisión del proyecto completo y se presentan
 las conclusiones, así como las maneras en las que se puede extender y mejorar el
 trabajo realizado.
