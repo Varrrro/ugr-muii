@@ -260,9 +260,7 @@ las tareas que se han acometido en cada una de ellas:
             \end{itemize}
       \item \textbf{Iteración 10} (09/11 - 23/11)
             \begin{itemize}
-                  \item (Servidor) Escribir pruebas de integración.
                   \item (Servidor) Definir flujo de integración continua.
-                  \item (Cliente) Escribir pruebas de integración.
                   \item (Cliente) Definir flujo de integración continua.
                   \item (Librería) Definir flujo de integración continua.
             \end{itemize}
@@ -306,6 +304,15 @@ Gracias a estas extensiones, se puede usar el mismo editor para distintos
 programar en distintos lenguajes, lo cual ha sido una de las principales razones
 por las que se ha escogido.
 
+\begin{figure}[H]
+      \centering
+      \includegraphics[width=0.7\textwidth]{01-introduction/tools.png}
+      \caption{Logotipos de las herramientas utilizadas. De izquierda a derecha y%
+            de arriba a abajo: Python, Docker, Raspberry Pi, GitHub, VS Code y
+            draw.io}
+      \label{fig:01-tools}
+\end{figure}
+
 Como ya se ha indicado en la sección anterior, se ha aplicado un SCRUM adaptado
 como metodología de planificación, gestión y seguimiento del proyecto, usando un
 tablero Kanban para la visualización de las tareas. Concretamente, se ha usado
@@ -319,6 +326,19 @@ referenciar los \textit{issues} ya mencionados en los mensajes de
 \textit{commit}, de forma que se vinculan los cambios realizados con la tarea en
 la que se engloban. La gestión del proyecto es, por tanto, más directa y
 sencilla.
+
+Además del tablero de proyecto y los propios repositorios de Git, también se ha
+hecho uso de \textbf{Actions}, la herramienta de CI/CD de GitHub. Como su propio
+nombre indica, se definen acciones en flujos de trabajo que se ejecutan para los
+eventos del repositorio (p. ej., un nuevo \textit{push}, la publicación de una
+nueva versión del producto, un \textit{pull request}) que desee el
+desarrollador. Estas acciones pueden incluir, por ejemplo, la ejecución de
+pruebas, la construcción de artefactos o el despliegue del software sobre
+diversas plataformas. Así, se consigue automatizar los procesos de despliegue y
+se incorporan también medidas para el control de la calidad del código. En
+nuestro caso, en la ejecución de las pruebas se genera un informe sobre la
+cobertura del código, el cuál se envía a \textbf{Codecov}, una plataforma
+especializada en este tipo de informes, para su análisis y visualización.
 
 Los diagramas que se presentan a lo largo de este trabajo, incluidos los que
 componen el diseño de la herramienta desarrollada y sus componentes, se han
@@ -384,15 +404,6 @@ una pérdida aceptable a cambio de la flexibilidad y facilidad de uso que nos
 ofrece. Además, el lenguaje de consultas es mucho más claro e intuitivo que SQL,
 permitiendo realizar consultas de envergadura similar.
 
-\begin{figure}[H]
-      \centering
-      \includegraphics[width=0.7\textwidth]{01-introduction/tools.png}
-      \caption{Logotipos de las herramientas utilizadas. De izquierda a derecha y%
-            de arriba a abajo: Python, Docker, Raspberry Pi, GitHub, VS Code y
-            draw.io}
-      \label{fig:01-tools}
-\end{figure}
-
 La idea principal en torno a la cual gira este trabajo es la del uso de
 contenedores para el despliegue de tareas de tiempo real. En este sentido,
 \textbf{Docker} es la tecnología de contenerización en la que nos hemos apoyado
@@ -404,6 +415,13 @@ completo que permita replicar un despliegue de producción de forma simplificada
 Las imágenes de contenedores definidas en este proyecto, se han alojado en el
 repositorio de imágenes \textbf{DockerHub}, aprovechando que proporciona un
 sistema de construcción automática de imágenes.
+
+\begin{figure}
+      \centering
+      \includegraphics[width=0.8\textwidth]{01-introduction/raspberry-pi.jpg}
+      \caption{Raspberry Pi 4B utilizada en el trabajo}
+      \label{fig:01-raspberry-pi}
+\end{figure}
 
 Para realizar las pruebas del sistema desarrollado, se ha usado una
 \textbf{Raspberry Pi 4B}, concretamente la que se muestra en la figura
@@ -437,31 +455,27 @@ Debian), y se le ha aplicado la revisión 24 del parche de tiempo real
 \textbf{PREEMPT-RT}. Este parche aporta al sistema la capacidad de realizar
 planificación de procesos apropiativa.
 
-\begin{figure}
-      \centering
-      \includegraphics[width=0.8\textwidth]{01-introduction/raspberry-pi.jpg}
-      \caption{Raspberry Pi 4B utilizada en el trabajo}
-      \label{fig:01-raspberry-pi}
-\end{figure}
-
 \section{Estructura de la memoria}
-
-La estructura de la presente memoria es la siguiente:
 
 En el capítulo 1, se ha introducido el proyecto y explicado tanto la motivación
 detrás del mismo como los objetivos planteados, la planificación seguida y las
 herramientas, tecnologías y metodologías que se han utilizado.
 
 En el capítulo 2, se realiza un estudio en profundidad del estado de la técnica
-en lo relativo a los sistemas confiables, las tareas de tiempo real y las
-tecnologías de virtualización. Se presentan otros estudios interesantes llevados
-a cabo en esta área y se introducen todos los conceptos relevantes.
+en lo relativo a los sistemas confiables, la computación en la nube y sus
+derivados, las tareas de tiempo real y las tecnologías de virtualización. Se
+introducen todos los conceptos relevantes, además de presentar otros trabajos
+interesantes llevados a cabo en estas áreas.
 
-En el capítulo 3, se aborda el diseño de una herramienta para el despliegue y
+En el capítulo 3, se analiza el rendimiento de los procesos de tiempo real
+contenerizados, haciendo especial hincapié en el impacto que tienen sobre el
+mismo las tecnologías de contenerización frente a procesos no virtualizados.
+
+En el capítulo 4, se aborda el diseño de una herramienta para el despliegue y
 seguimiento de tareas de tiempo real en entornos distribuidos, así como su
 implementación y prueba. Se presentan los resultados obtenidos y se discute
 sobre los mismos.
 
-En el capítulo 4, se realiza una revisión del proyecto completo y se presentan
+En el capítulo 5, se realiza una revisión del proyecto completo y se presentan
 las conclusiones, así como las maneras en las que se puede extender y mejorar el
 trabajo realizado.
