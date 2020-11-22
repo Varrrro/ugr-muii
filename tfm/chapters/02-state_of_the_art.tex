@@ -1,0 +1,151 @@
+\chapter{Revisión del estado de la técnica}
+
+Antes de poder aventurarnos el desarrollo de una herramienta para la
+orquestación de tareas de tiempo real usando contenedores, es necesario
+estudiar y comprender los fundamentos y peculiaridades de diversos campos como
+son los sistemas de tiempo real, la planificación de procesos, la computación en
+la nube o las tecnologías de virtualización. En este capítulo, se introducen los
+conceptos más importantes de estos campos, además de revisar otros trabajos
+realizados con el objetivo de comprobar cuál es el estado de la investigación
+en dichos temas.
+
+\section{Sistemas empotrados, confiables y de criticalidad mixta}
+
+Los ordenadores y teléfonos inteligentes que usamos a diario nos permiten
+realizar multitud de tareas diferentes: desde leer el correo o navegar por
+internet hasta editar imágenes y vídeos o realizar videollamadas. Aunque no nos
+demos cuenta, interactuamos habitualmente con muchos más sistemas informáticos
+además de los ya mencionados. La computación está presente en los coches, los
+trenes, los aviones, los satélites espaciales, los televisores o las lavadoras.
+Estos sistemas, que reciben el nombre de sistemas empotrados, son diseñados para
+llevar a cabo de manera óptima un conjunto de tareas específico, frente al
+enfoque generalista de los ordenadores de uso personal. Como se introduce en
+\cite{wolf_high-performance_2014}, los sistemas empotrados son comunes en
+contextos en los que el rendimiento es primordial, como son las comunicaciones
+de red o la compresión/decompresión de audio y vídeo para retransmisiones en
+directo. En este libro se exponen diversas aplicaciones de los sistemas
+empotrados de alto rendimiento para sistemas ciber-físicos o CPS
+(\textit{Ciber-Physical Systems}). Los CPS son, en esencia, sistemas
+informáticos que interactúan con procesos físicos, actuando en función de los
+cambios en su entorno. Este aspecto hace que el diseño y la implementación de
+los CPS difiera considerablemente del resto de sistemas empotrados, ya que hay
+que prestar especial atención a las características del entorno en el que se
+desplegará el sistema y a los mecanismos de entrada y salida (interacción con el
+entorno), además de optimizar el consumo de memoria y procesamiento para cumplir
+con las limitaciones del hardware \cite{lee_introduction_2016}.
+
+En algunos casos, estos sistemas son críticos, lo que significa que un fallo en
+su funcionamiento supone daños graves a las personas o al medio ambiente. Este
+es el caso de los aviones, los trenes o las plantas nucleares, por ejemplo. En
+estos sistemas, cobra especial importancia el concepto de confiabilidad, es
+decir, garantizar el correcto funcionamiento del sistema en todo momento. A
+nivel de software, existen arquitecturas y patrones de diseño orientados a
+garantizar la tolerancia ante los fallos del mismo
+\cite{pullum_software_2001}\cite{randell_system_1975}. Por otra parte, la
+replicación de componentes \cite{hutchison_dependable_2006} es una técnica muy
+usada tanto para el software como el hardware. Lo que se intenta con la
+replicación es asegurar que un cálculo o procesamiento se lleva a cabo de forma
+correcta, aunque alguna de las réplicas falle. En \cite{amin_review_2019}, se
+realiza una revisión de los sistemas de control tolerantes ante fallos
+dividiéndolos en tres tipos: AFTCS (\textit{Active Fault Tolerant Control
+  Systems}), PFTCS (\textit{Passive Fault Tolerant Control Systems}) o HFTCS
+(\textit{Hybrid Fault Tolerant Control Systems}). Para cada uno de estos tipos,
+los autores presentan las principales arquitecturas usadas, los modelos de
+análisis matemático usados para su validación y las últimas técnicas usadas para
+su diseño. Por otra parte, el estudio realizado en \cite{shan_survey_2019}
+tiene como objetivo analizar la aplicación de los estándares de seguridad,
+protección y privacidad al diseño y desarrollo de sistemas confiables, llegando
+los autores a la conclusión de que cada vez están ganando más popularidad los
+de protección y privacidad, aunque los procesos para asegurar estos aspectos son
+menos maduros que los relacionados con la seguridad. Además, también se
+identifica una falta de acción combinada en estos aspectos, trabajando
+normalmente por separado en cada uno de ellos.
+
+Para muchos sistemas de control, el tiempo es también un aspecto relevante a la
+hora de garantizar su correcto funcionamiento. Estos son los llamados sistemas
+de tiempo real. En un sistema normal, en el que se obtiene una salida al aplicar
+una cierta lógica sobre la entrada, la corrección de dicha salida depende de la
+corrección de la lógica aplicada, es decir, del cálculo realizado. No obstante,
+cuando hablamos de sistemas de tiempo real, la corrección de la lógica no es
+suficiente para determinar que el funcionamiento es correcto, sino que esta
+corrección depende también del momento temporal en el que se obtiene
+\cite{gambier_real-time_2004}. En otras palabras, si el cálculo es correcto pero
+el resultado no llega en el momento en el que se necesita, se considera como un
+fallo del sistema. Las tareas que ejecuta un sistema de tiempo real están, por
+tanto, sujetas a restricciones temporales. Normalmente, hablamos de un tiempo
+límite o \textit{deadline} antes del cuál se debe haber completado la tarea.
+Comúnmente, se suelen clasificar las tareas en dos tipos dependiendo de las
+consecuencias de incumplir con sus restricciones temporales:
+
+\begin{itemize}
+  \item Tareas de tiempo real «blandas»: Se denominan así aquellas tareas en las
+        que no completar las mismas antes del límite supone una reducción en la
+        calidad del servicio (QoS).
+  \item Tareas de tiempo real «duras»: En estas tareas, el no cumplir con las
+        restricciones temporales supone un fallo grave del sistema con posibles
+        consecuencias catastróficas.
+\end{itemize}
+
+Para implementar estos sistemas, se hace uso de herramientas y algoritmos de
+planificación de procesos específicos que permiten la ejecución de estos tipos
+de tareas cumpliendo con sus restricciones temporales. Esto se explica en más
+detalle en la sección \ref{sec:real-time}.
+
+En este trabajo, nos centraremos especialmente en los sistemas de control
+aplicados a entornos industriales. Debemos diferenciar entre dos conceptos: PCS
+(\textit{Process Control System}), que es el sistema encargado de controlar una
+parte concreta de la planta (p. ej., una turbina o un brazo robótico), e ICS
+(\textit{Industrial Control System}), que se refiere al control de toda la
+planta al completo. Un ICS está compuesto, por tanto, de múltiples PCS que se
+encargan de controlar los distintos aspectos del proceso de producción. Estos
+PCSs son sistemas empotrados como los que hemos comentado a los que se aplican
+también los conceptos de confiabilidad y seguridad. En
+\cite{krotofil_industrial_2013} se realiza un estudio del estado del arte en
+cuanto a la seguridad de los ICS, concluyendo que, aunque las vulnerabilidades
+de muchos de los sistemas actuales son conocidas, la aplicación de parches que
+las solucionen son inviables debido a los altos costes asociados a la
+recertificación o directamente debido a la incompatibilidad con algunos sistemas
+más antiguos. Es necesario, por tanto, incorporar los conceptos de seguridad a
+los procesos de diseño desde el primer momento para evitar dar lugar a estas
+situaciones.
+
+En 2007, Vestal \cite{vestal_preemptive_2007} publica una primera propuesta para
+la planificación de conjuntos de tareas de criticalidad mixta. Este importante
+avance es considerado por muchos como el inicio de la investigación en sistemas
+de criticalidad mixta o MCS (\textit{Mixed-Criticality Systems}). La idea detrás
+de estos sistemas es, como su propio nombre indica, poder ejecutar sobre una
+misma plataforma hardware tanto tareas críticas como tareas no críticas o con
+niveles de criticalidad menores, asegurando en todo momento que las
+restricciones temporales se cumplen, al menos para las tareas más críticas.
+Desde entonces, se han planteado muchos modelos para la implementación de estos
+sistemas. En \cite{burns_mixed_2015}, Burns realiza una revisión de toda la
+investigación realizada en este campo hasta marzo de 2019. Se muestran en esta
+revisión algunas arquitecturas propuestas, además de las principales técnicas de
+análisis para estos sistemas en plataformas uniprocesador y multiprocesador.
+Burns identifica la conciliación entre la separación de los procesos y la
+compartición de los recursos como el principal problema de los MCS. En este
+aspecto, nuestro trabajo propone el uso de contenedores como medio de ejecución
+de los distintos procesos sobre una misma plataforma consiguiendo esa
+separación.
+
+No podemos terminar nuestra revisión de los sistemas empotrados sin hablar sobre
+el uso del kernel de Linux para su implementación. Como referencia, hemos tomado
+dos estudios realizados en 2004 sobre el uso de Linux para sistemas empotrados
+\cite{geer_survey_2004}\cite{henkel_munichmit_2004}. En el primero, se destaca
+la buena situación de Linux en este campo, suponiendo las soluciones comerciales
+basadas en el kernel de Linus Torvalds el 15,5\% del mercado. El segundo estudio
+es una encuesta realizada a 268 personas que trabajan en el campo de los
+sistemas empotrados, ya sea académicamente o de forma comercial. Lo más
+destacable es que la mayoría de los participantes usan Linux en sistemas
+empotrados para comunicaciones, dispositivos móviles o control de maquinaria.
+Esto último es especialmente alentador para este trabajo, en el que pretendemos
+usar Linux como base para la implementación de ICS.
+
+\section{La nube en los sistemas industriales: fog/edge computing para sistemas
+  de tiempo real}
+
+\section{Tecnologías de virtualización: hipervisores y contenedores}
+
+\section{Aspectos de computación en tiempo real: RTOS, algoritmos de
+  planificación y herramientas}
+\label{sec:real-time}
