@@ -340,6 +340,151 @@ unificada sobre la que implementarlos.
 
 \section{Tecnologías de virtualización: hipervisores y contenedores}
 
+De manera simple, la virtualización consiste en abstraer ciertas capas de un
+sistema convencional (p. ej., el hardware). Sobre estas abstracciones se pueden
+ejecutar procesos o sistemas completos de manera aislada. Este aspecto es el que
+hace de la virtualización un concepto tan relevante para la computación en la
+nube, ya que posibilita el acceso compartido a los recursos. Por ejemplo, sobre
+una misma CPU se podrían ejecutar varios sistemas operativos completamente
+funcionales de forma que ninguno de ellos sepa de la existencia de los otros.
+Cada uno de estos sistemas cree que tiene una CPU completa para él gracias a la
+abstracción del hardware. Aunque las tecnologías de virtualización han
+experimentado un empuje enorme en los últimos años debido a la expansión de la
+nube, no se trata de una idea novedosa. En 1974, Popek y Goldberg
+\cite{popek_formal_1974} definían los requisitos que debía cumplir una
+plataforma para poder virtualizar sistemas completos. Hoy en día, hablamos de
+virtualización en dos niveles diferentes: a nivel del hardware (máquinas
+virtuales) o a nivel del sistema operativo (contenedores).
+
+Lo que se quiere decir con virtualización a nivel del hardware, es que es éste
+el que se abstrae. Esto es precisamente lo que sucede con las máquinas
+virtuales. El hardware «real» se puede fraccionar para asignarlo a las diversas
+máquinas virtuales, que lo usan como si se tratase de una plataforma física
+normal y corriente. Así, se puede regular la cantidad de CPU, memoria RAM o,
+incluso, acceso a dispositivos de I/O que tiene cada máquina virtual. Todo esto
+es posible gracias a los hipervisores, que son la pieza de software encargada de
+abstraer el hardware y regular su uso por parte de las máquinas virtuales.
+Dependiendo de la relación existente entre el hipervisor y el hardware que
+abstraen, nos encontramos con hipervisores de tipo 1 y 2. Un hipervisor de tipo
+2 se ejecuta sobre un sistema operativo tradicional, que recibe el nombre de
+anfitrión, mientras que los de tipo 1 prescinden del anfitrión, ejecutándose
+directamente sobre el hardware que gestionan (\textit{bare metal}). En la figura
+\ref{fig:02-hypervisors} se representa gráficamente esta diferencia.
+
+\begin{figure}
+  \centering
+  \includegraphics[width=0.8\textwidth]{02-state_of_the_art/hypervisors.png}
+  \caption{Capas de la virtualización mediante hipervisores de tipo 1 y 2}
+  \label{fig:02-hypervisors}
+\end{figure}
+
+Como es obvio, los hipervisores de tipo 1 suponen una solución mucho más liviana
+que los de tipo 2 al no tener un anfitrión. Por otra parte, pueden asignar
+prácticamente todos los recursos hardware de la plataforma a las máquinas
+virtuales de forma dinámica, mientras que los de tipo 2 se ven restringidos a
+los límites impuestos por el anfitrión. Los hipervisores de tipo 2 son más
+utilizados en el ámbito personal, con herramientas como VirtualBox o VMWare
+siendo muy utilizadas para la prueba de software, mientras que los de tipo 1 son
+los que predominan a nivel empresarial e industrial, con claros ejemplos como
+PikeOS o Xen. Este último supuso un importante avance en la ejecución segura y
+aisla de máquinas virtuales sobre hardware de uso común \cite{barham_xen_2003}.
+En lo que a sistemas de tiempo real se refiere, RT-Xen \cite{xi_rt-xen_2011} se
+presentó como un marco de referencia para la planificación de procesos con
+restricciones temporales en sistemas Linux virtualizados usando Xen, obteniendo
+prometedores resultados.
+
+Mientras que en la virtualización a nivel del hardware las máquinas virtuales
+contienen un sistema operativo completo, en la virtualización a nivel del
+software solo se virtualizan procesos. Estos procesos virtualizados, que reciben
+comúnmente el nombre de contenedores, acceden a los servicios básicos del
+sistema operativo anfitrión. De forma análoga a los hipervisores, los motores de
+contenedores son los encargados de gestionar los procesos y su acceso al sistema
+operativo que comparten. Realmente, los procesos contenerizados se ejecutan
+sobre el sistema anfitrión como lo harían los procesos «nativos». La única
+diferencia se encuentra en que los procesos contenerizados están aislados del
+resto. Estos procesos solo pueden ver al resto de procesos de su mismo
+contenedor, no los del resto de contenedores ni los no contenerizados. Para
+conseguir este aislamiento, los motores de contenedores aprovechan varias
+características del kernel de Linux, entre las que destacamos:
+
+\begin{itemize}
+  \item Espacios de nombres (\textit{namespaces}): los identificadores de
+        proceso (PID), las interfaces de red o la parte del sistema de ficheros que
+        puede ver un proceso contenerizado depende del espacio de nombres al que se
+        asigne cuando se crea. Usando esta herramienta, se puede restringir lo que ven
+        los contenedores del sistema anfitrión.
+  \item Grupos de control (\textit{control groups}): Los \texttt{cgroups} son
+        mecanismos que permiten regular el acceso al hardware por parte de los
+        contenedores, así como su acceso compartido.
+\end{itemize}
+
+A primera vista, cabría pensar que, dado que contienen un sistema operativo
+completo, las máquinas virtuales son mucho más pesadas que los contenedores. No
+obstante, en trabajos como \cite{manco_my_2017} \cite{felter_updated_2015} se
+desmiente esta percepción. Concretamente, en el último se compara el popular
+motor de contenedores Docker con KVM, un famoso hipervisor para Linux, llegando
+a la conclusión de que ninguno de los dos penaliza de manera significativa el
+rendimiento en cuanto a uso de CPU o memoria, si bien es cierto que las máquinas
+virtuales de KVM obtenían peores resultados en las operaciones de I/O. Por otro
+lado, la seguridad en los contenedores es un aspecto todavía en desarrollo
+\cite{randal_ideal_2020}, sobre todo en la seguridad del kernel compartido.
+
+Existen múltiples motores de contenedores usados ampliamente en la actualidad,
+como es el caso de Docker, Rocket (rkt) o LXC (\textit{LinuX Containers}).
+Kozhirbayev y Sinnot \cite{kozhirbayev_performance_2017} realizaron en 2017 una
+comparativa del rendimiento entre Docker y LXC\footnote{Concretamente, se hace
+  uso de Flockport.}. Los resultados obtenidos coinciden con los vistos en
+\cite{felter_updated_2015} en tanto que los procesos contenerizados no tienen
+una penalización en el consumo de CPU o RAM frente a los nativos, aunque sí que
+se observa esta penalización en las operaciones de I/O. Como el rendimiento es
+similar para todos los motores de contendores, se ha decidido poner el foco
+sobre Docker para este trabajo debido a que es el más popular, con el
+consecuente impacto que esto tiene en la calidad del soporte y de la
+documentación disponible.
+
+\begin{figure}
+  \centering
+  \includegraphics[width=\textwidth]{02-state_of_the_art/docker.png}
+  \caption{Esquema de funcionamiento de Docker}
+  \label{fig:02-docker}
+\end{figure}
+
+En Docker, al igual que en muchos otros motores de contenedores, los
+contenedores se lanzan a partir de imágenes, definidas mediante un
+\texttt{Dockerfile}. Una imagen es reutilizable y universal, pudiendo lanzar
+réplicas de un mismo contenedor en cualquier plataforma soportada por la imagen.
+Para trabajar con imágenes y contenedores, el sistema Docker se compone de dos
+partes principales: el demonio\footnote{Un demonio o \textit{daemon} es un tipo
+  de proceso que se ejecuta en segundo plano para ofrecer un servicio.} y el
+cliente. El demonio es el encargado de realizar todas las soperacones
+relacionadas con imágenes o contenedores, incluyendo su construcción,
+lanzamiento y gestión posterior. Para realizar estas acciones, expone una API
+con la que pueden interactuar los distintos clientes, siendo el oficial que
+proporciona Docker una aplicación de línea de comandos. A estos dos componentes
+se podría añadir un tercero, el registro de imágenes. Como su propio nombre
+indica, se trata de una especie de base de datos de imágenes listas para su uso.
+De esta forma, se pueden almacenar y compartir imágenes entre varios
+dispositivos a través de la red. No obstante, se puede hacer uso de Docker de
+manera local sin necesidad de usar un registro externo. Un esquema del
+funcionamiento de Docker que se acaba de explicar se puede ver en la figura
+\ref{fig:02-docker}.
+
+Centrando nuestra atención de nuevo en los sistemas de control industrial, se
+plantea la posibilidad de implementarlos usando contenedores
+\cite{hofer_industrial_2019}, aunque los principales inconvenientes
+identificados son los relacionados con la seguridad. En
+\cite{cinque_rt-cases_2019}, los autores proponen un modelo de planificación de
+procesos contenerizados para conjuntos de tareas con distintos niveles de
+criticalidad, defendiendo el uso de contenedores por su capacidad de
+aislamiento. Sin embargo, en la encuesta sobre contenerización para tiempo real
+realizada por Struhár et al. en 2020 \cite{struhar_real-time_2020}, se llega a
+la conclusión de que son necesarias mejores herramientas para la gestión de
+contenedores de tiempo real. Por ello, en este trabajo se plantea el desarrollo
+de una herramienta para este fin como prueba de concepto. Los autores del
+estudio destacan también la falta de un mecanismo determinista de comunicación
+entre procesos contenerizados y de herramientas de validación y prueba, además
+de los problemas de seguridad ya mencionados.
+
 \section{Aspectos de computación en tiempo real: RTOS, algoritmos de
   planificación y herramientas}
 \label{sec:real-time}
