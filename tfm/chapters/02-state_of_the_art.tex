@@ -488,3 +488,249 @@ de los problemas de seguridad ya mencionados.
 \section{Aspectos de computación en tiempo real: RTOS, algoritmos de
   planificación y herramientas}
 \label{sec:real-time}
+
+En esta sección, se va a explicar con mayor detalle el funcionamiento de los
+sistemas de tiempo real ya mencionados en las secciones anteriores. En estos
+sistemas, el tiempo es un factor crucial a la hora de determinar la validez de
+las salidas. De esta forma, las tareas ejecutadas se ven limitadas por
+restricciones temporales. Dependiendo de la severidad de las consecuencias del
+incumplimiento de las restricciones, solemos hablar de tareas y restricciones
+duras o blandas. Las restricciones duras son aquellas que, si se incumplen,
+tienen consecuencias son muy graves, como pueden ser daños a la vida de las
+personas en el caso de sistemas que sean críticos. En cuanto a las restricciones
+blandas, solo se experimenta una pérdida de calidad en el servicio cuando se
+incumplen, aunque se suele limitar el número de incumplimientos permitido. En la
+figura \ref{fig:02-deadlines} se muestra la diferencia entre los dos tipos de
+restricciones según su función de utilidad \cite{wang_introduction_2013}, que es
+la que define el valor de la salida del sistema en función del tiempo. Como se
+puede apreciar, el resultado de una tarea dura solo es útil si se da entre el
+inicio de la tarea y su límite temporal fijado, provocando daños de cualquier
+otra manera. En las tareas blandas, el resultador puede tener valor incluso si
+se obtiene después del límite, aunque se va reduciendo con el tiempo.
+
+Debido a la gran responsabilidad que recae sobre el cumplimiento de estos
+requisitos, los sistemas empotrados sobre los que se ejecutan estas tareas
+tienen características diferentes a las de los sistemas de uso general. A nivel
+del hardware, por ejemplo, las CPU tienen un diseño más simple que haga más
+fácil verificar el determinismo en sus operaciones. En
+\cite{rotenberg_chapter_2005}, Rotenberg y Anantaraman describen el
+funcionamiento de las CPU de alto rendimiento y las comparan con las empotradas.
+La ejecución predictiva, por ejemplo, es severamente limitada en los sistemas
+empotrados. Por otro lado, las operaciones de acceso a caché y RAM suponen están
+optimizadas para necesitar un menor número de ciclos. Normalmente, el conjunto
+de instrucciones (ISA) de estas CPU es reducido, conocido como RISC, reduciendo
+la complejidad y facilitando la programación a bajo nivel. ARM es una de las
+arquitecturas de microprocesador basadas en RISC más usadas para el diseño de
+sistemas empotrados. Otro aspecto diferencial es el número de núcleos o
+\textit{cores} presentes en los procesadores. Poseer varios núcleos hace posible
+la ejecución en paralelo de instrucciones, mejorando el rendimiento en los
+sistemas. No obstante, este paralelismo dificulta asegurar el determinismo,
+aunque algunos algoritmos de planificación de procesos han sido propuestos
+\cite{anderson_edf-based_2005} y la investigación es activa en este área. Para
+asegurar además que las tareas se puedan ejecutar correctamente, los sistemas de
+tiempo real suelen dejar capacidad de CPU extra libre.
+
+\begin{figure}
+  \centering
+  \includegraphics[width=0.8\textwidth]{02-state_of_the_art/deadlines.png}
+  \caption{Funciones de utilidad para restricciones temporales duras y blandas}
+  \label{fig:02-deadlines}
+\end{figure}
+
+Además del hardware, el software usado para implementar estos sistemas también
+es especial. Los lenguajes y herramientas deben proporcionar al programador
+ciertas comodidades para la implementación de procesos en tiempo real
+\cite{burns_real-time_2009}:
+
+\begin{itemize}
+  \item Especificar momentos en los que las acciones se deben realizar.
+  \item Especificar los momentos antes de los cuales las acciones deben terminar.
+  \item Permitir la ejecución repetitiva (periódica y aperiódica) de trabajo.
+  \item Limitar la varianza en las operaciones de entrada y salida.
+  \item Responder a situaciones donde no todas las restricciones temporales se
+        pueden cumplir.
+  \item Responder a situaciones en las que los requisitos de tiempo cambian de
+        manera dinámica.
+\end{itemize}
+
+Una parte muy importante de los sistemas empotrados es su sistema operativo, el
+cual gestiona los recursos físicos de la plataforma y controla el uso de los
+mismos por parte de los procesos implementados por los desarrolladores. Al igual
+que ocurre con el hardware, estos sistemas operativos también tienen
+características diferentes a los de propósito general para poder dar cobijo a
+tareas con restricciones temporales, recibiendo el nombre de RTOS (\textit{Real
+  Time Operating System}). La principal diferencia, podríamos decir que se
+encuentra en los algoritmos de planificación de tareas usados, aunque cabe
+destacar que también hay otras áreas importantes como el acceso a memoria o la
+gestión de las interrupciones. El algoritmo de planificación es, a grandes
+rasgos, la política que decide en qué orden se ejecutan las tareas del sistema.
+En los sistemas normales, normalmente se asigna a cada proceso una fracción
+igualitaria de tiempo de CPU, ejecutándose hasta que consume su fracción de
+tiempo o se bloquea (p. ej., por una operación de lectura o escritura). En los
+sistemas de tiempo real, este método no es factible, ya que los procesos tienen
+distintas prioridades y no pueden quedar a la espera de que otro proceso de
+menor prioridad libere la CPU. Por ello, la planificación de procesos de tiempo
+real es apropiativa (\textit{preemptive scheduling}), de forma que el sistema
+operativo puede quitar la CPU a un proceso que está en ejecución para
+asignársela a otro más prioritario. Como se destaca en
+\cite{burns_scheduling_1991}, la planificación de procesos óptima para un
+sistema de tiempo real «duro» depende enormemente del problema en cuestión. ¿Se
+trata de un sistema uniprocesador o multiprocesador? ¿Todas las situaciones son
+conocidas de antemano? ¿Las tareas son periódicas o aperiódicas? Dependiendo de
+la situación, podemos encontrarnos con que un algoritmo de planificación es más
+eficaz que otro.
+
+Antes de entrar a explicar algunos de los algoritmos de planificación de tareas
+más importantes, debemos entender mejor como son estas tareas. Las tareas en un
+sistema de tiempo real pueden ser provocadas por tiempo o por eventos. Las
+tareas provocadas por tiempo son tareas periódicas, con un tiempo definido para
+sus ciclos. Las caracterizamos con los siguientes atributos:
+
+\begin{itemize}
+  \item Tiempo de ejecución $WCET$ (\textit{Worst Case Execution Time}): Se trata
+        del tiempo que se necesita para completar la tarea en el peor caso.
+  \item Límite de tiempo $D$ (\textit{Deadline}): Momento temporal posterior a
+        la activación de la tarea y antes del cuál se debe haber completado.
+  \item Período $T$ (\textit{Period}): Es el tiempo que transcurre entre
+        activaciones.
+\end{itemize}
+
+Estas tareas son ejecutadas por un reloj interno del sistema, el cuál debe ser
+lo suficientemente preciso como para asegurar que los ciclos se cumplen. Por
+otra parte, las tareas también pueden ser aperiódicas si son activadas por un
+evento externo (p. ej., un cambio en el entorno, como sucede en algunos sistemas
+de control) mediante mecanismos como las interrupciones. Las tareas aperiódicas
+siguen teniendo $WCET$ y $D$, pero no tienen período $T$. En algunos casos,
+existe un tiempo mínimo entre activaciones $T$, considerándose la tarea como
+esporádica. En ocasiones, los sistemas empotrados limitan su arquitectura para
+que solo haya tareas activadas por tiempo, evitando las interacciones y
+comprobando de forma periódica si se ha producido un evento. De todos estos
+atributos, el tiempo de ejecución en el peor caso es el más difícil de
+determinar. Se trata de un límite superior que puede ser estimado usando métodos
+estáticos, probabilísticos o, incluso, basados en mediciones. No obstante, la
+fiabilidad de muchos de estos métodos se apoya en supuestos sobre el sistema y
+su funcionamiento \cite{abella_wcet_2015}.
+
+Para evaluar la efectividad de un algoritmo de planificación, solemos basarnos
+en su capacidad para cumplir con todas las restricciones temporales de un
+conjunto de tareas dado. Cuando se consiguen respetar todas estas restricciones,
+se dice que la planificación (o el conjunto de tareas) es viable, mientras que
+si el sistema se salta alguna, se suele decir que está sobrecargado. Un concepto
+muy importante en el que se apoyan los algoritmos de planificación para
+determinar la viabilidad de un conjunto de tareas es la utilización total de CPU
+para dicho conjunto, definida como
+
+\begin{equation}
+  U = \sum_{i=1}^{n} \frac{C_{i}}{min(D_{i}, T_{i})}
+\end{equation}
+
+por Liu y Layland \cite{liu_scheduling_1973}, donde $C_{i}$, $D_{i}$ y $T_{i}$
+son el tiempo de ejecución, límite temporal y período para la tarea $i$ del
+conjunto, respectivamente.
+
+Anteriormente, se ha indicado que la planificación de procesos de tiempo real es
+apropiativa, de forma que el sistema operativo puede retirarle a un proceso los
+recursos que tenía asignado para dárselos a otro de mayor prioridad. La
+asignación de estas prioridades a las distintas tareas es la base de los
+algoritmos de planificación. Estos algoritmos pueden ser de dos tipos: estáticos
+o dinámicos. Los algoritmos estáticos realizan la planificación y asignan las
+prioridades a las tareas antes incluso de tener que poner en marcha el sistema,
+de forma \textit{offline}, ejecutándose luego las tareas en el orden determinado
+por las prioridades establecidas. También conocida como planificación de
+prioridades fijas FPS (\textit{Fixed-Priority Scheduling})
+\cite{tilborg_fixed_1991}, para aplicar estos algoritmos es necesario conocer
+todas las características del problema de planificación (número de tareas y sus
+atributos) de antemano, lo cuál es imposible en algunas situaciones en las que
+se desconoce la carga de trabajo futura del sistema. Uno de los algoritmos
+estáticos más conocidos es RMS (\textit{Rate Monotonic Scheduling})
+\cite{liu_scheduling_1973}\cite{kao_rate-monotonic_2008}, cuya idea principal es
+que las tareas con los períodos más pequeños tienen mayor prioridad. En la
+propuesta original de RMS realizada por Liu y Layland, asumen un conjunto de
+tareas periódicas con $D=T$ y determinan el límite superior para la utilización
+como
+
+\begin{equation}
+  U \leq n(2^{\frac{1}{n}} - 1)
+\end{equation}
+
+Esto implica que, para conjuntos de tareas muy grandes ($n \rightarrow \infty$),
+la utilización de CPU tiene que ser inferior al 70\%, que es una cifra
+relativamente baja. No obstante, si se cumplen todas estas condiciones, RMS
+garantiza encontrar una planificación viable si es que existe, o lo que es lo
+mismo, es un algoritmo óptimo. Otro problema de RMS es que requiere que el
+período sea igual al límite de tiempo para cada tarea. Para solucionar este
+problema, se propone DMT (\textit{Deadline Monotonic Scheduling})
+\cite{audsley_hard_1991}, en el que los procesos se caracterizan con $C_{i} \leq
+  D_{i} \leq T_{i}$.
+
+Como ya se ha comentado, el principal problema de la planificación estática es
+que se trata de algoritmos clarividentes, es decir, necesitan conocer toda la
+información sobre el conjunto de tareas para poder determinar su viabilidad. Los
+algoritmos dinámicos, por otra parte, permiten determinar esta viabilidad
+en tiempo de ejecución, cambiando las prioridades de las tareas sobre la marcha
+u \textit{online}. Uno de los algoritmos dinámicos más conocidos es EDF
+(\textit{Earliest Deadline First}) \cite{liu_scheduling_1973}, donde las tareas
+con menor tiempo restante antes de su límite temporal son las que reciben una
+mayor prioridad. En este caso, el algoritmo es óptimo para conjuntos de tareas
+donde se cumpla la condición \cite{zhang_schedulability_2009}
+
+\begin{equation}
+  U \leq 1
+\end{equation}
+
+No obstante, esta situación se da solo en los sistemas uniprocesador. En los
+multiprocesador, determinar que la utilización es inferior al número de CPU no
+es una condición suficiente para garantizar que el conjunto de tareas tenga una
+planificación viable. En 2005, Anderson adapta EDF para sistemas multiprocesador
+\cite{anderson_edf-based_2005}, consiguiendo una condición suficiente para
+tareas de tiempo real blandas. Un enfoque diferente al de EDF lo proporciona MUF
+(\textit{Maximum Urgency First}) \cite{stewart_real-time_1991}. En este
+algoritmo, se trabaja en torno a la urgencia de cada tarea, que es determinada
+según la combinación de varias prioridades. En concreto, cada tarea posee 2
+prioridades fijas definidas antes de la ejecución y una dinámica, que se calcula
+sobre la marcha, existiendo una relación de precedencia entre estas prioridades.
+
+En el caso de ser necesario trabajar con tareas aperiódicas o esporádicas, se
+puede aplicar alguno de los algoritmos propuestos en
+\cite{sprunt_scheduling_1989}, entre los que destacamos DSA (\textit{Deferrable
+  Server Algorithm}) y SSA (\textit{Sporadic Server Algorithm}).
+
+Para terminar con el repaso de la computación de tiempo real, vamos a hacer un
+breve repaso de algunos de los RTOS más utilizados. En
+\cite{hambarde_survey_2014}, Hambarde realiza una comparación entre Windows CE,
+VxWorks, QNX Neutrino y RTAI. El último, que es esencialmente una extensión del
+kernel de Linux o co-kernel que da soporte a este tipo de cargas de trabajo,
+obtiene los mejores resultados en latencia, \textit{jitter} y tiempo de
+respuesta de entre los cuatro, si bien es cierto que su latencia ante
+interrupciones es mayor que la de VxWorks. Además de RTAI, otros co-kernels para
+Linux serían RTLinux y Xenomai. Todos estos co-kernels funcionan de manera
+similar: implementan un despachador de interrupciones que captura las
+interrupciones provenientes del hardware para redirigirlas a los procesos (tanto
+normales como de tiempo real), mientras que también poseen un planificador de
+procesos para asegurar que se cumplen las prioridades.
+
+Además de los co-kernels, otra solución alternativa para Linux la encontramos en
+el parche \texttt{PREEMPT\_RT}. El desarrollo de este parche es llevado a cabo
+por programadores del kernel dentro de la fundación Linux y en paralelo con el
+del propio kernel, lo que le da un cierto aire de «oficialidad». En esencia, los
+cambios que aplica este parche sobre el kernel habilitan la planificación
+apropiativa y aumentan el determinismo de ciertas operaciones. Este
+acercamiento, al trabajar sobre un único kernel en vez de los dos que se
+obtienen con las soluciones basadas en co-kernels, resulta en una mayor
+facilidad a la hora de implementar procesos de tiempo real, ya que se realiza de
+manera idéntica a los normales. Los co-kernels exponen interfaces especiales que
+se salen de la interfaz estándar de Linux y con las que sus procesos deben
+trabajar, algo que no ocurre con el parche \texttt{PREEMPT\_RT} y que hace que
+sea muy fácil adaptar un proceso existente para que tenga un comportamiento más
+determinista. En cuanto a su rendimiento, el estudio llevado a cabo en
+\cite{reghenzani_real-time_2019} determina que no es una solución apta para
+sistemas de tiempo real duro, pero puede ser perfectamente usado cuando las
+restricciones son más livianas. En cualquier caso, el rendimiento va a depender
+enormemente del hardware utilizado y de la implementación de los drivers para
+dicho hardware. Para este trabajo, se ha decidido usar como plataforma objetivo
+el sistema GNU/Linux parcheado con \texttt{PREEMPT\_RT} debido a que se adhiere
+a la interfaz estándar del kernel y las tecnologías de virtualización mediante
+contenedores presentes en la plataforma son muy maduras. El hecho de que no sea
+un RTOS aceptable para sistemas con restricciones temporales duras nos es
+indiferente para el alcance de este proyecto, dado que solo se busca implementar
+una herramienta que sirva como prueba de concepto de las ideas planteadas.
