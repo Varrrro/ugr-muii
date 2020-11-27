@@ -722,12 +722,22 @@ manera idéntica a los normales. Los co-kernels exponen interfaces especiales qu
 se salen de la interfaz estándar de Linux y con las que sus procesos deben
 trabajar, algo que no ocurre con el parche \texttt{PREEMPT\_RT} y que hace que
 sea muy fácil adaptar un proceso existente para que tenga un comportamiento más
-determinista. En cuanto a su rendimiento, el estudio llevado a cabo en
-\cite{reghenzani_real-time_2019} determina que no es una solución apta para
+determinista. Este parche habilita varios modos de planificación de procesos
+nuevos para el planificador del kernel, entre los que destacaremos
+\texttt{SCHED\_DEADLINE} \cite{noauthor_deadline_nodate}. Esta política de
+planificación aplica el algoritmo EDF junto con CBS (\textit{Constant Bandwith
+  Server}). El algoritmo CBS se encarga de asignar un ancho de banda a cada tarea,
+de forma que una tarea concreta no pueda ejecutarse durante un tiempo superior a
+su tiempo de ejecución dentro de cada período. De esta forma, se consigue el
+aislamiento temporal de las tareas, evitando que el comportamiento de una de
+ellas afecte a las demás. En cuanto a su rendimiento, el estudio llevado a cabo
+en \cite{reghenzani_real-time_2019} determina que no es una solución apta para
 sistemas de tiempo real duro, pero puede ser perfectamente usado cuando las
 restricciones son más livianas. En cualquier caso, el rendimiento va a depender
 enormemente del hardware utilizado y de la implementación de los drivers para
-dicho hardware. Para este trabajo, se ha decidido usar como plataforma objetivo
+dicho hardware.
+
+Para este trabajo, se ha decidido usar como plataforma objetivo
 el sistema GNU/Linux parcheado con \texttt{PREEMPT\_RT} debido a que se adhiere
 a la interfaz estándar del kernel y las tecnologías de virtualización mediante
 contenedores presentes en la plataforma son muy maduras. El hecho de que no sea
