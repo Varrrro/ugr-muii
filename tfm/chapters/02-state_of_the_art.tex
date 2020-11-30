@@ -151,6 +151,7 @@ usar Linux como base para la implementación de ICS.
 
 \section{La nube en los sistemas industriales: fog/edge computing para sistemas
   de tiempo real}
+\label{sec:cloud-fog-edge}
 
 Desde su aparición alrededor de 2006, la computación en la nube o \textit{cloud
   computing} ha experimentado un crecimiento abismal, cambiando completamente la
@@ -336,9 +337,11 @@ consecución de estos objetivos es el modelado de estos sistemas cuidando los
 aspectos deseados de seguridad y fiabilidad \cite{farsi_industry_2019}. En este
 sentido, creemos que el \textit{fog} es un modelo de computación que puede
 facilitar el diseño de estos CPS al proporcionar una plataforma robusta y
-unificada sobre la que implementarlos.
+unificada sobre la que implementarlos, siempre y cuando se pueda garantizar el
+determinismo en la ejecución de las tareas críticas.
 
 \section{Tecnologías de virtualización: hipervisores y contenedores}
+\label{sec:virtualization}
 
 De manera simple, la virtualización consiste en abstraer ciertas capas de un
 sistema convencional (p. ej., el hardware). Sobre estas abstracciones se pueden
@@ -737,10 +740,16 @@ restricciones son más livianas. En cualquier caso, el rendimiento va a depender
 enormemente del hardware utilizado y de la implementación de los drivers para
 dicho hardware.
 
-Para este trabajo, se ha decidido usar como plataforma objetivo
-el sistema GNU/Linux parcheado con \texttt{PREEMPT\_RT} debido a que se adhiere
-a la interfaz estándar del kernel y las tecnologías de virtualización mediante
-contenedores presentes en la plataforma son muy maduras. El hecho de que no sea
-un RTOS aceptable para sistemas con restricciones temporales duras nos es
-indiferente para el alcance de este proyecto, dado que solo se busca implementar
-una herramienta que sirva como prueba de concepto de las ideas planteadas.
+Para este trabajo, se ha decidido usar como plataforma objetivo el sistema
+GNU/Linux parcheado con \texttt{PREEMPT\_RT} debido a que se adhiere a la
+interfaz estándar del kernel y las tecnologías de virtualización mediante
+contenedores presentes en la plataforma son muy maduras. Además, las
+herramientas de prueba sobre esta plataforma también están muy asentadas. El
+hecho de que no sea un RTOS aceptable para sistemas con restricciones temporales
+duras nos es indiferente para el alcance de este proyecto, dado que solo se
+busca implementar una herramienta que sirva como prueba de concepto para el
+despliegue de tareas de tiempo real sobre múltiples dispositivos. En concreto,
+se usará la política de planificación \texttt{SCHED\_DEADLINE} para las tareas
+desplegadas en dichos dispositivos, dado que la carga de trabajo que tendrá cada
+uno es desconocida (las tareas desplegadas sobre cada nodo pueden cambiar con el
+tiempo) y es la única planificación dinámica que ofrece Linux.
