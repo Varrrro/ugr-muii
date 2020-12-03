@@ -284,7 +284,7 @@ más tareas, reflejan fielmente la capacidad de adaptarse a los imprevistos que
 ofrece SCRUM que ya hemos comentado anteriormente.
 
 \section{Material y métodos}
-\label{sec:tools}
+\label{sec:01-tools}
 
 En esta sección, se presentan todas las herramientas que se han usado para
 llevar a cabo este proyecto, además de las metodologías de trabajo seguidas. En
@@ -421,14 +421,15 @@ sistema de construcción automática de imágenes.
       \centering
       \includegraphics[width=0.8\textwidth]{01-introduction/raspberry-pi.jpg}
       \caption{Raspberry Pi 4B utilizada en el trabajo}
-      \label{fig:01-raspberry-pi}
+      \label{fig:01-raspberry_pi}
 \end{figure}
 
 Para realizar las pruebas del sistema desarrollado, se ha usado una
 \textbf{Raspberry Pi 4B}, concretamente la que se muestra en la figura
-\ref{fig:01-raspberry-pi}. Se trata de un SBC (\textit{Single Board Computer})
+\ref{fig:01-raspberry_pi}. Se trata de un SBC (\textit{Single Board Computer})
 de bajo coste y muy versátil, pudiendo usarse para infinidad de aplicaciones.
-Las características detalladas de esta plataforma se pueden ver en la tabla \ref{tab:01-raspberry-specs}.
+Las características detalladas de esta plataforma se pueden ver en la tabla
+\ref{tab:01-raspberry_specs}.
 
 \begin{table}[H]
       \centering
@@ -448,13 +449,15 @@ Las características detalladas de esta plataforma se pueden ver en la tabla \re
             \hline
       \end{tabular}
       \caption{Especificaciones de la Raspberry Pi usada en el trabajo}
-      \label{tab:01-raspberry-specs}
+      \label{tab:01-raspberry_specs}
 \end{table}
 
 El sistema operativo de este dispositivo es GNU/Linux (concretamente, basado en
-Debian), y se le ha aplicado la revisión 24 del parche de tiempo real
-\textbf{PREEMPT-RT}. Este parche aporta al sistema la capacidad de realizar
-planificación de procesos apropiativa.
+Debian), al que se le ha aplicado la revisión 24 del parche de tiempo real
+\texttt{PREEMPT\_RT}. Este parche aporta al sistema la capacidad de realizar
+planificación de procesos apropiativa. En el apéndice
+\ref{app:03-container_tests} se explica con detenimiento el proceso seguido para
+usar el kernel de Linux con \texttt{PREEMPT\_RT} en la Raspberry Pi.
 
 \section{Estructura de la memoria}
 

@@ -25,7 +25,7 @@ pueda parecer una solución natural a este problema, la enorme carga que pondrí
 sobre la red la constante transmisión de cantidades de datos tan grandes, así
 como la latencia resultante de estas comunicaciones, hacen que no podamos
 considerar esta plataforma como apropiada para dar cobijo a tareas con
-restricciones temporales. En la sección \ref{sec:cloud-fog-edge}, se introduce
+restricciones temporales. En la sección \ref{sec:02-cloud_fog_edge}, se introduce
 el paradigma \textit{fog} como una extensión de la nube más cercana a las
 fuentes de datos. Según este modelo, los datos generados por los dispositivos
 del borde de la red son procesados en nodos ubicados en la misma red local.
@@ -47,7 +47,7 @@ o el sistema operativo, facilitando el despliegue de los mismos sobre
 dispositivos con características dispares y unificando su desarrollo, dado que
 no es necesario implementarlos para cada plataforma distinta). Así, se facilita
 la escalabilidad de los procesos para dar respuesta a los cambios en la demanda.
-En la sección \ref{sec:virtualization}, planteamos el uso de contenedores en vez
+En la sección \ref{sec:02-virtualization}, planteamos el uso de contenedores en vez
 de máquinas virtuales para esto, apoyándonos en su carácter más liviano y su
 mejor rendimiento para operaciones de entrada y salida.
 
@@ -374,7 +374,7 @@ complejidad que añaden.
 Volviendo a la figura \ref{fig:04-architecture}, apreciamos que el servidor
 también controla el acceso a la base de datos donde se almacena toda la
 información sobre los nodos y las tareas. Para esta base de datos, como ya se
-indicó en la sección \ref{sec:tools}, se ha decidido MongoDB, que es un gestor
+indicó en la sección \ref{sec:01-tools}, se ha decidido MongoDB, que es un gestor
 de bases de datos documentales y no estructuradas. También se puede comprobar en
 el diagrama que el servidor expone todas las funcionalidades del sistema a
 través de una API (\textit{Application Programming Interface}). Esta API sigue
@@ -405,7 +405,8 @@ de simplificar también el flujo de trabajo entre cliente y servidor. Para
 aplicar REST al diseño de un servicio concreto, se debe identificar cuáles son
 los recursos con los que trabaja y qué operaciones permite sobre los mismos. En
 el caso de nuestro sistema, tenemos los recursos detallados en las tablas
-\ref{tab:04-node_resource} y \ref{tab:04-task_resource}.
+\ref{tab:04-node_resource} y \ref{tab:04-task_resource}, mientras que las
+operaciones posibles se presentan en la sección \ref{sec:server-design}.
 
 \begin{table}[H]
     \centering
@@ -478,32 +479,320 @@ siguientes secciones de este capítulo.
 
 \section{Servidor maestro}
 
-\subsection{Diseño}
+Tal y como se ha descrito en la sección anterior, el servidor es la parte del
+sistema desarrollado que encapsula la lógica principal encargada de llevar a
+cabo las funcionalidades deseadas. En esta sección se ahonda en las decisiones
+de diseño tomadas para este componente, además de mostrar algunas partes
+interesantes de la implementación y las técnicas de prueba e integración
+continua aplicadas.
 
-\subsection{Implementación}
+\subsection{Diseño e implementación}
+\label{sec:server-design}
+
+A la hora de estructurar el servidor, decidimos hacer una separación por
+dominios, de forma que tenemos por un lado la lógica relativa a las
+funcionalidades de los nodos y, por otro, la de las tareas. A su vez, también
+realizamos una división de responsabilidades, diferenciando entre controladores
+y servicios.
+
+Los controladores definen las rutas y operaciones posibles en la API REST del
+servidor. Este servidor recibe peticiones HTTP para las rutas que expone, las
+cuáles se manejan con distintos controladores dependiendo del verbo HTTP usado.
+Estos controladores se encargan entonces de validar los datos recibidos en la
+petición, gestionar la autenticación y construir las respuestas con el código de
+estado adecuado, llamando a funciones de los servicios para realizar las
+operaciones. En los servicios se implementa la lógica encargada de llevar a cabo
+estas operaciones como tal, conectando con la base de datos para la gestión de
+nodos y tareas, además de llevar a cabo el despliegue de éstas. Como ya se ha
+indicado, la lógica se divide también por dominio, de forma que tenemos unos
+controladores para las operaciones sobre los nodos y otros separados para las
+que ocurren sobre las tareas. Lo mismo ocurre con la lógica de estas operaciones
+en los servicios. Para las acciones de orquestación de tareas, además, los
+servicios hacen uso de un paquete independiente que implementa estas
+funcionalidades concretas. El diagrama de la figura
+\ref{fig:04-server_architecture} refleja esta arquitectura que se acaba de
+describir.
+
+En cuanto a las operaciones concretas que se pueden realizar mediante la API
+REST del servidor, se han definido e implementado las siguientes:
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.9\textwidth]{04-implementation/server.png}
+    \caption{Diagrama de arquitectura del servidor}
+    \label{fig:04-server_architecture}
+\end{figure}
+
+\begin{itemize}
+    \item \texttt{GET /nodes}
+
+          Con esta operación, se obtiene una lista completa de los nodos
+          presentes en el sistema. En caso de ocurrir algún error (p. ej., en la
+          conexión con la base de datos), el servidor devuelve un una respuesta
+          500 (\textit{Internal Server Error}). Si no hay ningún problema, la
+          respuesta tiene el código de estado 200 (\textit{Ok}) y contiene en su
+          cuerpo la lista de nodos. Cabe destacar que en esta lista de nodos no
+          se muestra toda la información presente en la base de datos sobre los
+          mismos, sino que se ocultan algunos datos como son el usuario SSH, los
+          dispositivos que tiene o los detalles de la CPU.
+
+    \item \texttt{POST /nodes}
+
+          Esta operación permite crear un nuevo nodo, debiendo incluir en el
+          cuerpo de la petición los datos del nuevo nodo. No es necesario
+          proporcionar valores para todos los atributos definidos en la tabla
+          \ref{tab:04-node_resource}, sino que solo son requeridos el nombre,
+          dirección IP y número de núcleos de la CPU del nuevo nodo. El nombre
+          dado debe ser único, devolviendo el servidor una respuesta 409
+          (\textit{Conflict}) si ya está en uso por otro nodo del sistema.
+
+          La petición HTTP que recibe el servidor debe contener en la cabecera
+          \textit{Authorization} unas credenciales de autenticación de tipo
+          básico, es decir, usuario y contraseña codificados con Base64. Este
+          usuario y contraseña son los usados por el servidor para establecer la
+          conexión SSH inicial con el nodo. Esta conexión inicial sirve para
+          añadir los datos del nodo al fichero \texttt{known\_hosts} del
+          servidor con el que se regulan las conexiones SSH conocidas y copiar
+          la clave pública de éste al fichero \texttt{authorized\_keys} del
+          nodo. Esto permite que las siguientes conexiones SSH que deba realizar
+          el servidor usen esta clave para la autenticación, de forma que no sea
+          necesario usar la contraseña y aumentando la seguridad.
+
+          Si los datos enviados en el cuerpo de la petición no son correctos, el
+          controlador devuelve una respuesta 400 (\textit{Bad Request}). En caso
+          de no poder crear el nodo por cualquier otro motivo, se devuelve un
+          código 500. La ejecución correcta de esta operación produce una
+          respuesta con código de estado 200 y con el nuevo recurso recién
+          creado en el cuerpo.
+
+    \item \texttt{GET /nodes?name=<node\_name>}
+
+          Como se puede suponer por el verbo HTTP y la ruta usadas, esta
+          operación permite obtener la información detallada de un nodo
+          concreto, el cuál se identifica por el nombre proporcionado. Esta
+          operación y \texttt{GET /nodes} comparten controlador, comprobándose
+          al inicio de éste si en la URI de la petición se encuentra el
+          parámetro de consulta \textit{name} para decidir si se llama a la
+          función del servicio de nodos que devuelve la lista o a la que
+          devuelve los detalles de uno concreto. A diferencia de lo que ocurría
+          con esta otra operación, en este caso sí que se devuelven todos los
+          atributos del nodo indicado junto con la respuesta 200. Si no se
+          encuentra en la base de datos ningún nodo con el nombre indicado, la
+          respuesta devuelta tiene un código de estado 404 (\textit{Not Found}).
+
+    \item \texttt{GET /nodes/<node\_id>}
+
+          Esta operación es idéntica a la anterior, siendo la única diferencia
+          que la identificación del nodo cuyos detalles se desean obtener se
+          realiza por su ID. Esta operación también devuelve una respuesta 200
+          con los datos del nodo en el cuerpo en caso de encontrarse en la base
+          de datos y un código 404 en caso contrario. También puede devolver una
+          raspuesta 409 si el ID dado no es válido, es decir, si no cumple con
+          el formato de ID de MongoDB.
+
+    \item \texttt{PUT /nodes/<node\_id>}
+
+          Con esta operación se pueden modificar los atributos de un nodo ya
+          existente en el sistema. En el cuerpo de la petición se incluyen solo
+          los atributos cuyo valor se desea cambiar junto con estos nuevos
+          valores. Si el formato del cuerpo de la petición no es correcto, el
+          controlador de la ruta devuelve una respuesta 409. También se devuelve
+          este código si el ID indicado no es válido. Si no se encuentra en la
+          base de datos del sistema ningún nodo con el ID dado, se devuelve una
+          respuesta 404. En caso de realizarse correctamente la operación, la
+          respuesta tiene el código de estado 200 y contiene en su cuerpo todos
+          los datos del recurso actualizado. Cabe destacar que, si alguno de los
+          atributos modificados es el nombre, la IP, el usuario SSH o la lista
+          de dispositivos del nodo, el servidor procede a eliminar del mismo
+          todas las tareas que tuviera ejecutándose con el fin de evitar
+          inconsistencias y estados no recuperables en el sistema. En el
+          diagrama de la figura \ref{fig:04-update_node} se refleja este
+          comportamiento, además del resto de acciones que lleva a cabo el
+          servidor para realizar esta operación.
+
+          \begin{figure}
+              \centering
+              \includegraphics[width=\textwidth]{04-implementation/update-node.png}
+              \caption{Diagrama de secuencias de la operación de actualización de un nodo}
+              \label{fig:04-update_node}
+          \end{figure}
+
+    \item \texttt{DELETE /nodes/<node\_id>}
+
+          Esta operación permite eliminar un nodo del sistema. Las peticiones no
+          necesitan contener ningún dato en el cuerpo, siendo solo necesario
+          indicar en la propia ruta de la petición el ID del nodo a eliminar. Si
+          este ID no es válido, el controlador devuelve una respuesta 409,
+          mientras que si no se encuentra ningún nodo con este ID la respuesta
+          es 404. Si la eliminación del recurso se realiza correctamente, la
+          respuesta tiene el código de estado 200 y contiene en su cuerpo los
+          datos del recurso recién eliminado. Al igual que ocurría con la
+          modificación, el sistema se asegura de parar todas las tareas que se
+          estuvieran ejecutando sobre el nodo que se elimina y borrarlas del
+          mismo, de forma que no queden «restos» en el dispostivo.
+
+    \item \texttt{GET /tasks}
+
+          De forma análoga a la operación \texttt{GET /nodes}, ésta devuelve la
+          lista de tareas que están almacenadas en la base de datos del sistema.
+          El cuerpo de la respuesta contiene esta lista con el código de estado
+          200 si la operación se ha podido realizar correctamente, devolviendo
+          el código 500 en caso contrario.
+
+    \item \texttt{POST /tasks}
+
+          Permite añadir una nueva tarea al sistema. A diferencia de las demás
+          operaciones, la cabecera \textit{content-type} de las peticiones para
+          esta operación, que es la que regula el tipo de contenido, no tiene el
+          valor \texttt{application/json}, sino que se usa
+          \texttt{multipart/form-data}. Este tipo de contenido se compone de
+          múltiples campos, los cuáles pueden ser textuales o archivos, lo cuál
+          es necesario para esta operación dado que es necesario aportar tanto
+          los metadatos de la tarea en formato JSON como un fichero
+          \texttt{tar.gz} con el código fuente y la definición de la imagen
+          Docker. El controlador de esta operación se encarga de extraer todos
+          estos datos de los dos campos del cuerpo de la petición y, entonces,
+          llamar a la función del servicio encargada de realizar la inserción de
+          la tarea en la base de datos, devolviendo el controlador una respuesta
+          200 si la operación se realiza correctamente. Si el formato de la
+          petición recibida es incorrecto (p. ej., falta alguno de los campos),
+          se devuelve una respuesta 400. Además, el nombre de la nueva tarea
+          debe ser único, obteniendo una respuesta 409 en caso de no serlo. Si
+          no se puede crear la tarea por cualquier otra razón, la respuesta
+          obtenida es 500.
+
+    \item \texttt{GET /tasks?name=<task\_name>}
+
+          Con esta operación se pueden obtener los detalles de una tarea
+          concreta, la cuál se identifica a partir del nombre indicado en el
+          parámetro de consulta \textit{name} de la petición. Al igual que
+          ocurría con la operación \texttt{GET /nodes?name=<node\_name>}, el
+          controlador que da respuesta a esta operación es compartido con el de
+          \texttt{GET /tasks}. Al inicio de la ejecución, el controlador
+          comprueba la presencia del parámetro \textit{name} en la petición,
+          devolviendo los detalles de la tarea o la lista completa de tareas
+          según si está presente o no. En caso de operación correcta, la
+          respuesta 200 incluye en el cuerpo los datos del recurso deseado a
+          excepción del fichero \texttt{tar.gz} con su código fuente. Si este
+          recurso no se encuentra, el código devuelto es 404, devolviendo 500 en
+          cualquier otro caso.
+
+    \item \texttt{GET /tasks/<task\_id>}
+
+          Al igual que la operación anterior, ésta también devuelve los detalles
+          de una tarea, aunque en este caso se usa el ID de la misma para su
+          identificación. Si este ID no es válido, el controlador devuelve una
+          respuesta 400; mientras que si no se encuentra en la base de datos
+          ninguna tarea con este ID, la respuesta es 404. Esta operación tampoco
+          devuelve el fichero de despliegue asociado a la tarea. Si no se puede
+          realizar la operación, el controlador devuelve una respuesta 500.
+
+    \item \texttt{PUT /tasks/<task\_id>}
+
+          Modificación de una tarea. Como ocurría en la operación de creación de
+          tareas, las peticiones también tienen el tipo de contenido
+          \texttt{multipart/form-data}. Como diferencia, no es necesario que la
+          petición contenga tanto el dichero \texttt{tar.gz} con el código
+          fuente como el JSON con los atributos, sino que solo debe contener lo
+          que se vaya a actualizar. Antes de modificar la tarea, el servidor se
+          asegura de eliminarla de cualquier nodo en el que se estuviera
+          ejecutando para evitar inconsistencias en el sistema. Si el ID dado o
+          el formato del cuerpo de la petición no son válidos, el controlador
+          devuelve una respuesta 400. Si no se encuentra en la base de datos
+          ninguna tarea con el ID indicado, se devuelve un 404. En caso de
+          realizarse la operación correctamente, la respuesta devuelta tiene el
+          código 200 y contiene en su cuerpo el recurso actualizado. Si no se
+          puede realizar la operación por cualquier otra razón, devuelve una
+          respuesta 500.
+
+    \item \texttt{DELETE /tasks/<task\_id>}
+
+          Elimina una tarea de la base de datos del sistema, identificada por el
+          ID indicado en la propia petición. Si no se encuentra ninguna tarea
+          con dicho ID, devuelve 404. Si este ID no es válido, devuelve 400. Si
+          no se puede realizar la operación por cualquier otra razón, devuelve
+          500. Cuando la eliminación se completa de forma satisfactoria, el
+          controlador devuelve una respuesta con código 200 y con el recurso
+          recién eliminado en el cuerpo.
+
+    \item \texttt{POST /nodes/<node\_id>/tasks?task\_id=<task\_id>}
+
+          Esta operación permite el despliegue de una tarea dada en un nodo. Es,
+          quizás, la operación más compleja que realiza el servidor. Se recibe
+          una petición en cuya ruta se especifican tanto el ID del nodo objetivo
+          como el de la tarea a ejecutar. El controlador comprueba primero que
+          estos IDs sean válidos, devolviendo una respuesta 400 en caso de no
+          serlo. Si lo son, se los envía a la función del servicio que contiene
+          la lógica encargada de llevar a cabo la operación.
+
+          Esta función puede devolver un error \texttt{NotFound} si no encuentra
+          en la base de datos los recursos deseados, error que captura el
+          controlador para generar una respuesta 404. Si los IDs se corresponden
+          con recursos existentes en el sistema, el servicio procede a comprobar
+          que el nodo posea todos los dispositivos que necesita la tarea. Si no
+          es así, el servicio lanza un error \texttt{MissingDevices} que es
+          capturado por el controlador, que genera una respuesta 500. La última
+          comprobación que se realiza es la de la viabilidad de la ejecución del
+          conjunto de tareas que se obtendría al añadir la nueva tarea a las que
+          ya se están ejecutando en el nodo. Tanto para realizar esta
+          comprobación como para llevar a cabo el despliegue como tal, el
+          servicio se apoya en el paquete interno \textit{crane} que ya fue
+          introducido al inicio de esta sección. La función
+          \texttt{check\_feasibility} de este paquete es comprueba esta
+          viabilidad. Esta función recibe el conjunto de tareas y el número de
+          núcleos de la CPU del nodo objetivo. Con estos datos, se calcula la
+          utilización de CPU para determinar si la ejecución es viable o no
+          \cite{zhang_schedulability_2009}. Cabe destacar que, si el nodo tiene
+          más de un núcleo (multiprocesador), esta comprobación de la
+          utilización no es condición suficiente para asegurar la viabilidad del
+          conjunto de tareas, aunque en esta primera versión de la herramienta
+          no se gestiona esta situación.
+
+          \begin{figure}
+              \centering
+              \includegraphics[width=\textwidth]{04-implementation/deploy-task.png}
+              \caption{Diagrama de secuencias de la operación de despliegue de una tarea}
+              \label{fig:04-deploy_task}
+          \end{figure}
+
+          Si la función \texttt{check\_feasibility} determina que el conjunto de
+          tareas es viable, entonces se ejecuta otra función del paquete
+          \textit{crane} para realizar el despliegue: \texttt{deploy\_task}.
+          Esta función recibe como entrada el fichero \texttt{tar.gz} de la
+          tarea, así como sus metadatos y los del nodo. Con estos datos, se
+          establece una conexión con el demonio Docker del nodo mediante SSH,
+          obteniendo un cliente con el que se construye la imagen a partir del
+          fichero \texttt{tar.gz} y se lanza el contenedor. Los parámetros de
+          planificación de la tarea (tiempo de ejecución, límite de tiempo y
+          período) se le pasan al contenedor como variables de entorno, las
+          cuáles luego usará la librería para fijar la planificación.
+
+          Cualquier tipo de excepción que se lance durante este despliegue será
+          capturada por el controlador para generar una respuesta 500. Si la
+          operación se realiza correctamente, el servidor responde con una
+          respuesta 200 que contiene en su cuerpo los detalles del nodo
+          actualizado, incluyendo ya en su lista de tareas la que se acaba de
+          añadir. Todo este proceso que se acaba de describir para realizar la
+          operación de despliegue se puede observar de manera esquematizada en
+          el diagrama de secuencias de la figura \ref{fig:04-deploy_task}.
+\end{itemize}
 
 \subsection{Prueba}
 
-\subsection{Integración contínua}
+\subsection{Integración continua}
 
 \section{Cliente de terminal}
 
-\subsection{Diseño}
-
-\subsection{Implementación}
+\subsection{Diseño e implementación}
 
 \subsection{Prueba}
 
-\subsection{Integración contínua}
+\subsection{Integración continua}
 
 \section{Imagen base}
 
-\subsection{Diseño}
+\subsection{Diseño e implementación}
 
-\subsection{Implementación}
-
-\subsection{Prueba}
-
-\subsection{Integración contínua}
+\subsection{Integración continua}
 
 \section{Análisis del rendimiento}
