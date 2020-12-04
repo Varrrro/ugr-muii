@@ -1,0 +1,115 @@
+\chapter{Ejecución de las pruebas de \texttt{rt-tests} dentro de contenedores}
+\label{app:C-container_tests}
+
+Como se ha visto en el capítulo \ref{ch:03-performance_analysis}, para estudiar
+el impacto que tiene el uso de contenedores sobre la latencia en la activación
+de procesos de tiempo real se ha hecho uso de la utilidad
+\texttt{cyclicdeadline} de la suite de pruebas de tiempo real para Linux
+\texttt{rt-tests}. Para obtener los resultados deseados, era necesario ejecutar
+estas pruebas tanto de forma «nativa» como dentro de contenedores. En este
+apéndice se expone la imagen Docker que se ha preparado para ejecutar no solo
+\texttt{cyclicdeadline}, sino cualquier prueba de \texttt{rt-tests} dentro de un
+contenedor\footnote{El contenedor solo ha sido probado con \texttt{cyclictest},
+    \texttt{cyclicdeadline} y \texttt{deadline\_test}, aunque debería funcionar
+    correctamente para el resto de utilidades también.}. En el listado
+\ref{lst:C-dockerfile} se puede ver el \texttt{Dockerfile} con esta definición.
+
+\begin{lstlisting}[
+    language=Dockerfile,
+    caption={\texttt{Dockerfile} que define una imagen para la ejecución de \texttt{rt-tests}.},
+    label={lst:C-dockerfile}
+]
+FROM debian:stable-slim
+
+RUN apt update && apt install -y \
+        git \
+        build-essential \
+        bison \
+        flex \
+        libnuma-dev \
+        python3 \
+        python3-distutils
+
+RUN git clone \
+    git://git.kernel.org/pub/scm/utils/rt-tests/rt-tests.git
+WORKDIR ./rt-tests
+
+RUN git checkout tags/v1.8 -b v1.8
+RUN make all && make install
+
+VOLUME [ "/sys/kernel/debug" ]
+
+ENTRYPOINT [ "/bin/sh", "-c" ]
+\end{lstlisting}
+
+La imagen base escogida es la edición liviana o \textit{slim} de la versión más
+reciente de Debian disponible. En este caso, realmente no importaba demasiado
+cuál elegir, tan solo se necesitan las utilidades mínimas. A continuación, se
+deben instalar las dependencias necesarias, entre las que figuran \texttt{git},
+la librería de NUMA (\textit{Non Uniform Memory Access}) usada por
+\texttt{rt-tests} y los paquetes necesarios para la construcción del código. Una
+vez hecho esto, se clona el repositorio de \texttt{rt-tests} y se cambia el
+directorio de trabajo a la nueva carpeta. Las distintas versiones de la suite se
+encuentran identificadas en el repositorio por \textit{tags} o etiquetas, por lo
+que obtenemos la versión deseada descargando los \textit{commits} de su etiqueta
+en una nueva rama. En nuestro caso, y como se puede apreciar en el listado,
+estamos usando la versión 1.8, siendo la 1.9 la más reciente en el momento en el
+que se realizó el trabajo. El motivo por el que se ha escogido esta versión en
+vez de la 1.9 es sencillamente que esta última provoca fallos en la compilación
+para arquitecturas ARM debido a la introducción de una nueva dependencia. Una
+vez tenemos el código descargado, construimos e instalamos las librerías y los
+ejecutables con \texttt{make}.
+
+Se puede apreciar como, a continuación de esta compilación, se declara un
+volumen para el contenedor. En Docker, los volúmenes son mecanismos que permiten
+vincular un directorio del sistema de ficheros del anfitrión con otro del
+sistema de ficheros del contenedor, de forma que su contenido sea accesible
+desde dentro del mismo. Esto es necesario para la carpeta
+\texttt{/sys/kernel/debug}, ya que \texttt{rt-tests} lee varios de los ficheros
+que contiene, especialmente \texttt{sched\_features}, para determinar las
+propiedades del sistema.
+
+Para terminar, se define \lstinline{/bin/sh -c} como el punto de entrada del
+contenedor. Esto quiere decir que, al ejecutarlo, se lanzará este comando y se
+pasarán como argumentos los que se indiquen en el \lstinline{docker run}. De
+esta forma, tenemos la posibilidad de elegir la prueba de \texttt{rt-tests} que
+se desea ejecutar en cada caso.
+
+\begin{lstlisting}[
+    language=bash,
+    caption={Ejemplo de ejecución de \texttt{cyclicdeadline} usando el contenedor.},
+    label={lst:C-docker_run},
+    showstringspaces=false
+]
+docker run
+    -v /sys/kernel/debug:/sys/kernel/debug
+    --cap-add SYS_NICE --cap-add IPC_LOCK
+    rt-tests "cyclicdeadline -D 10m -t 4"
+\end{lstlisting}
+
+En el listado \ref{lst:C-docker_run}, se muestra un ejemplo de ejecución de
+\texttt{cyclicdeadline} usando la imagen de contenedor definida anteriormente.
+Como se puede apreciar, es necesario usar varios argumentos en la ejecución de
+\texttt{docker run} para hacer que el contenedor se lance correctamente. Estos
+argumentos son:
+
+\begin{itemize}
+    \item \texttt{-v}: Se trata de la conexión del volumen definido dentro del
+          contenedor y que hemos explicado antes, con un directorio del sistema de
+          ficheros del anfitrión. Aunque no es necesario usar el mismo directorio
+          tanto en el anfitrión como en el contenedor, en este caso sí que lo es
+          debido ya que los ficheros deben estar dentro de ese directorio específico.
+    \item \texttt{--cap-add}: Con este argumento, podemos indicar algunas
+          \textit{capabilities} o capacidades de Linux que queremos que tenga el
+          contenedor. Estas capacidades permiten realizar diversas operaciones.
+          Para nuestro contenedor, necesitamos dos: \texttt{SYS\_NICE}, para
+          asignar prioridades a los procesos (valor \textit{nice}); e
+          \texttt{IPC\_LOCK}, para usar las funciones de reserva de memoria (p.
+          ej., \texttt{mlock} o \texttt{mlockall}).
+\end{itemize}
+
+Después del nombre de la imagen a ejecutar, que en nuestro caso es
+\texttt{rt-tests}, se indica entre comillas la cadena de texto que se le pasará
+al punto de entrada del contenedor, es decir, a \lstinline{/bin/sh -c}. En el
+ejemplo del listado, se ejecuta la prueba \texttt{cyclicdeadline} con una
+duración de 10 minutos y un total de 4 hilos.

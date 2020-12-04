@@ -1,4 +1,5 @@
 \chapter{Análisis del rendimiento de procesos contenerizados}
+\label{ch:03-performance_analysis}
 
 Para comprobar cómo de factible es la idea de la ejecución de procesos de tiempo
 real virtualizados mediante contenedores, hemos llevado a cabo una serie de
@@ -27,7 +28,7 @@ Estas pruebas se han realizado dos veces: primero, ejecutando
 \texttt{cyclicdeadline} de forma «nativa» y, luego, dentro de un contenedor. La
 definición de la imagen Docker que contiene la prueba, así como los pasos
 seguidos para su ejecución, son explicados detalladamente en el apéndice
-\ref{app:03-container_tests}. Los resultados obtenidos son los mostrados en la
+\ref{app:C-container_tests}. Los resultados obtenidos son los mostrados en la
 tabla \ref{tab:03-cyclicdeadline_latency}. Cabe destacar que
 \texttt{cyclicdeadline} solo nos devuelve al final de su ejecución, para cada
 uno de los hilos, los valores mínimo, máximo y medio de la latencia. Por ello,

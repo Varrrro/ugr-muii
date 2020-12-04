@@ -1,0 +1,123 @@
+\chapter{Instalación del kernel de Linux con \texttt{PREEMPT\_RT} en Raspberry Pi}
+\label{app:B-rt_raspi}
+
+Normalmente, para obtener un kernel de Linux parcheado con \texttt{PREEMPT\_RT}
+es necesario descargarse por separado tanto la versión del kernel que queramos
+usar como la versión del parche adecuada para dicho kernel. Luego, se aplica el
+parche, se realizan algunos ajustes en la configuración para el dispositivo
+específico en el que se va a usar y se compila el nuevo kernel. Se trata de un
+proceso relativamente sencillo, pero que requiere de conocimientos avanzados
+sobre el kernel de Linux. Por suerte, la comunidad de usuarios de Raspberry Pi
+mantiene  de forma pública versiones del kernel parcheadas con
+\texttt{PREEMPT\_RT} para estos dispositivos, lo que facilita enormemente el
+proceso de instalación. En este apéndice, se describe el proceso a seguir para
+instalar en una Raspberry Pi 4B una de estas versiones del kernel de Linux
+parcheado para tiempo real.
+
+Cabe destacar que, aunque la Raspberry Pi es de arquitectura ARM, el kernel se
+puede preparar en un ordenador independiente que sea x86, que es lo que se ha
+hecho para este trabajo y lo que se explica en este apéndice. En este caso, lo
+que se realiza es una compilación cruzada.
+
+Antes de comenzar, es necesario crear los directorios sobre los que se va a
+trabajar y clonar los repositorios de GitHub donde se guardan tanto las
+versiones del kernel como las herramientas necesarias para su compilación. En el
+caso del repositorio que contiene los kernels, clonamos la rama de la versión
+concreta que queremos usar. Las ramas que contienen versiones parcheadas para
+tiempo real se identifican con el sufijo \texttt{-rt}. Tal y como se puede ver
+en el listado \ref{lst:B-workdir_prep}, hemos usado la versión 4.19 del kernel,
+dado que es la más reciente que se encuentra disponible con el parche en el
+momento en el que se ha realizado el trabajo.
+
+\begin{lstlisting}[
+    language=bash,
+    caption={Preparación de las carpetas y descarga de los repositorios.},
+    label={lst:B-workdir_prep},
+    morekeywords={mkdir}
+]
+mkdir -p %\mytilde)/rpi-rt/rt-kernel && cd ~/rpi-rt
+git clone https://github.com/raspberrypi/linux.git 
+    -b rpi-4.19.y-rt
+git clone https://github.com/raspberrypi/tools.git
+\end{lstlisting}
+
+Antes de compilar, en el listado \ref{lst:B-env_vars} se muestra como se guarda
+en variables de entorno algunos valores que serán necesarios para realizar esta
+compilación.
+
+\begin{lstlisting}[
+    language=bash,
+    caption={Definición de variables de entorno.},
+    label={lst:B-env_vars}
+]
+export ARCH=arm
+export CROSS_COMPILE=%\mytilde)/rpi-rt/tools/arm-bcm2708/
+    gcc-linaro-arm-linux-gnueabihf-raspbian-x64/bin/
+    arm-linux-gnueabihf-
+export INSTALL_MOD_PATH=%\mytilde)/rpi-rt/rt-kernel
+export INSTALL_DTBS_PATH=%\mytilde)/rpi-rt/rt-kernel
+export KERNEL=kernel7l
+\end{lstlisting}
+
+Una vez hecho esto, procedemos con la compilación. Para ello, se deben ejecutar
+los objetivos del \texttt{Makefile} ubicado en \lstinline{\mytilde/rpi-rt/linux}
+y que se muestran en el listado \ref{lst:B-kernel_compilation}. En este listado,
+el valor \texttt{X} que se le pasa a la opción \texttt{-j} debe ser igual al
+número de núcleos de CPU que posea el ordenador en el que se está realizando la
+compilación, con el objetivo de que se haga más rápido.
+
+\begin{lstlisting}[
+    language=bash,
+    caption={Compilación del kernel parcheado.},
+    label={lst:B-kernel_compilation},
+    morekeywords={make}
+]
+make bcm2711_defconfig
+make -jX zImage
+make -jX modules
+make -jX dtbs
+make -jX modules_install
+make -jX dtbs_install
+\end{lstlisting}
+
+Cuando termina la compilación, debemos añadir a la nueva imagen la información
+relativa al proceso de inicio del dispositivo o \textit{boot}, ejecutando los
+comandos que se muestran en el listado \ref{lst:B-boot_info}.
+
+\begin{lstlisting}[
+    language=bash,
+    caption={Añadir información de \textit{boot}.},
+    label={lst:B-boot_info},
+    morekeywords={mkdir, mv}
+]
+mkdir $INSTALL_MOD_PATH/boot
+./scripts/mkknlimg ./arch/arm/boot/zImage
+        $INSTALL_MOD_PATH/boot/$KERNEL.img
+cd $INSTALL_MOD_PATH/boot
+mv $KERNEL.img rt_kernel.img
+\end{lstlisting}
+
+Todos los archivos de la carpeta \lstinline{\mytilde/rpi-rt/rt-kernel} se
+comprimen entonces en un \texttt{tar.gz} que se copia a la Raspberry Pi, a la
+cuál debemos acceder ahora para ejecutar los comandos del listado
+\ref{lst:B-kernel_install}, que son los que consiguen instalar el nuevo kernel.
+
+\begin{lstlisting}[
+    language=bash,
+    caption={Instalación del kernel.},
+    label={lst:B-kernel_install}
+]
+tar -xzf rt-kernel.tar.gz
+cd boot && sudo cp -rd * /boot/
+cd ../lib && sudo cp -rd * /lib/
+cd ../overlays && suco cp -d * /boot/overlays
+cd .. && sudo cp -d bcm* /boot/
+\end{lstlisting}
+
+Para terminar, añadimos \lstinline{kernel=rt_kernel.img} al fichero
+\texttt{/boot/config} y reiniciamos la Raspberry Pi. Tras el reinicio, el
+comando \lstinline{uname -r} nos tiene que indicar la nueva versión del kernel,
+que, en nuestro caso, es \texttt{4.19.71-rt24-v7l+}. Ahora, el kernel puede
+realizar planificación apropiativa, además de recibir cambios en otros
+mecanismos que reducen su latencia, con lo que la Raspberry Pi puede ejecutar
+tareas de tiempo real.

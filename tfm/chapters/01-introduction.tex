@@ -435,17 +435,17 @@ Las características detalladas de esta plataforma se pueden ver en la tabla
       \centering
       \begin{tabular}{ |>{\columncolor[gray]{0.8}}l|p{0.5\textwidth}| }
             \hline
-            \textbf{Procesador}          & Cortex-A72                \\
+            \textbf{Procesador}          & Cortex-A72                        \\
             \hline
-            \textbf{Arquitectura}        & ARMv7                     \\
+            \textbf{Arquitectura}        & ARMv7                             \\
             \hline
-            \textbf{Número de núcleos}   & 4                         \\
+            \textbf{Número de núcleos}   & 4                                 \\
             \hline
-            \textbf{Frecuencia de reloj} & 1500 MHz                  \\
+            \textbf{Frecuencia de reloj} & 1500 MHz                          \\
             \hline
-            \textbf{RAM}                 & 4 GB                      \\
+            \textbf{RAM}                 & 4 GB                              \\
             \hline
-            \textbf{Sistema operativo}   & Raspberry Pi OS Lite 4.19 \\
+            \textbf{Sistema operativo}   & Raspberry Pi OS Lite (Linux 4.19) \\
             \hline
       \end{tabular}
       \caption{Especificaciones de la Raspberry Pi usada en el trabajo}
@@ -454,10 +454,11 @@ Las características detalladas de esta plataforma se pueden ver en la tabla
 
 El sistema operativo de este dispositivo es GNU/Linux (concretamente, basado en
 Debian), al que se le ha aplicado la revisión 24 del parche de tiempo real
-\texttt{PREEMPT\_RT}. Este parche aporta al sistema la capacidad de realizar
-planificación de procesos apropiativa. En el apéndice
-\ref{app:03-container_tests} se explica con detenimiento el proceso seguido para
-usar el kernel de Linux con \texttt{PREEMPT\_RT} en la Raspberry Pi.
+\texttt{PREEMPT\_RT}, obteniendo finalmente un kernel con versión
+\texttt{4.19.71-rt24-v7l+}. Este parche aporta al sistema la capacidad de
+realizar planificación de procesos apropiativa. En el apéndice
+\ref{app:B-rt_raspi} se explica con detenimiento el proceso seguido para usar el
+kernel de Linux con \texttt{PREEMPT\_RT} en la Raspberry Pi.
 
 \section{Estructura de la memoria}
 
