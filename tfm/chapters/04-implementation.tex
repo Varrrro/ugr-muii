@@ -1118,11 +1118,382 @@ introducidos siguen pasando las pruebas de forma correcta.
 
 \section{Cliente de terminal}
 
+El diseño detallado en la sección \ref{sec:04-system_design} especificaba que
+todas las funcionalidades del sistema se recogen en un servidor maestro que
+expone las distintas operaciones a través de una API REST. Este modelo
+cliente-servidor permite la implementación de múltiples clientes para
+plataformas diferentes de forma sencilla. En nuestro caso, se ha decidido
+acompañar esta primera versión del sistema con un cliente de línea de comandos
+que permita llevar a cabo las distintas operaciones existentes.
+
+Aunque un cliente con interfaz gráfica es más accesible y fácil de usar, se ha
+decidido hacerlo de terminal debido a que es más versátil: fácilmente se puede
+incorporar en \textit{scripts} de \texttt{bash} y tareas automáticas de
+\texttt{cron}, además de ser usado con herramientas de integración continua
+modernas.
+
 \subsection{Diseño e implementación}
+
+De forma idéntica a como sucedía con el servidor, la lógica del cliente se ha
+dividido por dominio y responsabilidades. En este caso, la división por dominio
+se realiza en tres partes: operaciones de nodos, de tareas y de orquestación.
+Para cada uno de estos dominios, tenemos dos componentes separados: los comandos
+y los servicios. Los primeros, como su propio nombre indica, definen los
+comandos que puede ejecutar el usuario desde la terminal, indicando todos los
+argumentes necesarios y las opciones disponibles. Los comandos validan la
+información introducida por el usuario, llamando después a los servicios para
+llevar a cabo las operaciones. Estos servicios son, al igual que ocurría con el
+servidor, clases con métodos estáticos que implementan la lógica de negocio de
+la aplicación. En el cliente, los servicios se encargan de realizar las
+peticiones HTTP al servidor y procesar las respuestas. Según la respuesta
+recibida, las funciones de los servicios pueden devolver los datos esperados o
+lanzar errores, en base a los cuáles el comando mostrará una respuesta u otra en
+la terminal para el usuario.
+
+A continuación, se presentan y detallan todos los comandos que se han definido
+para esta primera versión del cliente. Todas las operaciones comienzan con el
+comando base \texttt{shipyard}, que es el nombre que se le ha dado al sistema.
+
+\begin{itemize}
+    \item \lstinline{shipyard node ls}
+
+          Con este comando, se obtiene del servidor una lista con todos los nodos
+          presentes en el sistema. El cliente imprime en la terminal una tabla con
+          el ID, nombre, dirección IP y número de tareas en ejecución de cada
+          nodo.
+
+          Si se usa la opción \texttt{--active}, solo se muestran aquellos nodos
+          en los que se está ejecutando al menos una tarea.
+
+    \item \lstinline{shipyard node inspect <key>}
+
+          En este caso, se buscan los detalles de un nodo concreto, identificado
+          por la clave dada. Esta clave puede ser tanto el ID del nodo como su
+          nombre. Es la función del comando la encargada de comprobar si se trata
+          de un ID válido  para llamar a la función \lstinline{get_by_id} del
+          servicio, llamando a \lstinline{get_by_name} si no lo es.
+
+          El comando imprime en la terminal es su lista de tareas, mostrando el
+          ID, nombre, tiempo de ejecución (\textit{runtime}), límite de tiempo
+          (\textit{deadline}), período (\textit{period}) de cada una de ellas. Si
+          el servidor responde con un error (p. ej., si no se encuentra ningún
+          nodo con la clave dada), se indica al usuario.
+
+    \item \lstinline{shipyard node add <name> <address> <cpu-cores>}
+
+          Con este comando, el usuario puede añadir un nuevo nodo al sistema. En
+          la ejecución del propio comando, se indican el nombre, la dirección IP y
+          el número de núcleos del CPU del nuevo nodo. Inmediatamente después de
+          introducir el comando en la terminal, la aplicación pide al usuario que
+          introduzca el nombre de usuario y la contraseña para realizar la
+          conexión SSH inicial con el dispositivo y copiar las claves.
+
+          Si el usuario desea especificar más valores para otros atributos del
+          nodo, puede usar las opciones disponibles para el comando:
+          \texttt{--cpu}, \texttt{--cpu-arch}, \texttt{--cpu-freq}, \texttt{--ram}
+          y \texttt{--device}.
+
+          En pantalla se imprime el ID del nuevo nodo si la operación se ha
+          realizado correctamente, de forma que el usuario pueda realizar más
+          operaciones con él. Si la respuesta del servidor no es correcta, se
+          imprime el mensaje de error adecuado por la terminal para informar al
+          usuario.
+
+    \item \lstinline{shipyard node update <key> <values>}
+
+          Este comando se puede usar para cambiar los atributos de un nodo ya
+          presente en el sistema. Al igual que ocurría con el comando
+          \lstinline{node inspect}, el nodo se puede identificar tanto por su ID
+          como por su nombre. El argumento \textit{values} del comando debe ser
+          una cadena de texto en formato JSON con los pares clave-valor de los
+          atributos a actualizar. Si el formato de la cadena proporcionada no es
+          correcto, se imprime un mensaje de error para el usuario y la operación
+          se cancela. En caso de ser correcto, se llama a la función del servicio
+          encargada de realizar la petición de modificación.
+
+          Se debe tener en cuenta que, si el nombre del nodo o su lista de
+          dispositivos son modificados, realizar esta operación conlleva la
+          suspensión de la ejecución de todas las tareas que hubiera en dicho
+          nodo. Tanto si la operación se realiza correctamente como si no, se
+          muestra un mensaje en la terminal para informar al usuario del
+          resultado.
+
+    \item \lstinline{shipyard node rm <key>}
+
+          Un usuario puede eliminar un nodo usando este comando. Una vez más, se
+          puede identificar el nodo a eliminar tanto por su ID como por su nombre.
+          Al ejecutar este comando, el usuario debe confirmar que desea realizar
+          la operación para evitar accidentes. Al terminar la operación, se
+          muestra un mensaje por la terminar para informar al usuario del
+          resultado.
+
+    \item \lstinline{shipyard task ls}
+
+          Al igual que el comando \lstinline{node ls}, este comando sirve para
+          obtener una lista de las tareas almacenadas en el sistema. Se imprime en
+          la pantalla una tabla que muestra el ID, nombre, tiempo de ejecución,
+          límite de tiempo y período de cada tarea.
+
+    \item \lstinline{shipyard task add <name> <runtime> <deadline> <period> <file>}
+
+          Este comando es el usado para añadir una nueva tarea al sistema. En los
+          argumentos, se indican los valores necesarios para la tarea: nombre,
+          tiempo de ejecución, límite de tiempo, período y el fichero
+          \texttt{tar.gz} que contiene los desplegables de la tarea. Si el usuario
+          desea especificar también una serie de dispositivos que necesita la
+          tarea, puede hacerlo con la opción \texttt{--device} e indicar tantos
+          como quiera. Si la operación se realiza correctamente, el ID de la nueva
+          tarea se imprime por la terminal. Por el contrario, si ocurre algún
+          error que impida la realización de la operación, se informa al
+          usuario.
+
+          \begin{figure}
+              \centering
+              \includegraphics[width=\textwidth]{04-implementation/cli-remove-task-node.png}
+              \caption{Diagrama de secuencias del comando de de eliminación de una tarea de un nodo.}
+              \label{fig:04-cli_remove_task_node}
+          \end{figure}
+
+    \item \lstinline{shipyard task update <key> <values>}
+
+          Un usuario puede actualizar una tarea usando este comando. Al igual que
+          ocurría con el comando \lstinline{node update}, se pasan como argumentos
+          la clave que identifica la tarea que se debe actualizar y los nuevos
+          valores de los atributos en formato JSON. La clave puede ser tanto el ID
+          de la tarea como su nombre. Si el usuario desea actualizar también el
+          fichero \texttt{tar.gz} asociado a la tarea, debe usar la opción
+          \texttt{--file} junto con la ruta del nuevo fichero.
+
+          Tanto si la operación se realiza correctamente como si no, se imprime
+          por pantalla un mensaje para informar al usuario del resultado. Cabe
+          destacar que la operación del servidor a la que se llama para actualizar
+          una tarea provoca la eliminación de dicha tarea de todos los nodos en
+          los que se estuviera ejecutando.
+
+    \item \lstinline{shipyard task rm <key>}
+
+          Con este comando, el usuario puede eliminar una tarea del sistema. El
+          argumento \textit{key} es la clave con la que se identifica la tarea a
+          eliminar, ya sea su ID o su nombre. Al eliminar una tarea, la operación
+          del servidor a la que se llama se encarga de eliminarla de todos los
+          nodos en los que se estuviera ejecutando. Tanto si la operación se
+          realiza correctamente como si no, se imprime por pantalla un mensaje
+          para informar al usuario del resultado.
+
+    \item \lstinline{shipyard crane deploy <node-key> <task-key>}
+
+          Esta es, quizás, la operación más importante que se puede realizar desde
+          el cliente. Permite a un usuario desplegar una tarea del sistema en un
+          nodo concreto. El nodo y la tarea en cuestión se identifican por las
+          claves pasadas como argumentos del comando. Estas claves pueden ser
+          tanto sus IDs como sus nombres. La función del comando entonces llama a
+          la función del servicio \textit{crane} encargada de enviar la petición
+          HTTP al servidor para que se realice la operación. Se informa al usuario
+          del resultado de la operación mediante un mensaje que se imprime en la
+          terminal.
+
+    \item \lstinline{shipyard crane rm <node-key> <task-key>}
+
+          Al igual que el usuario puede desplegar tareas en los nodos, también
+          puede retirarlas de estos usando este comando. De nuevo, el nodo y la
+          tarea concretos son identificados por las claves pasadas como argumentos
+          en la llamada al comando y pueden ser tanto sus IDs como sus nombres.
+          Después, la función del servicio \textit{crane} se encarga de realizar
+          la petición HTTP apropiada y procesar la respuesta, informando el
+          comando al usuario del resultado mediante un mensaje impreso en la
+          terminal. En la figura \ref{fig:04-cli_remove_task_node} se muestra en
+          un diagrama de secuencias la lógica de ejecución de este comando.
+
+    \item \lstinline{shipyard config <key> <value>}
+
+          Este comando permite cambiar la configuración de la aplicación. Se
+          debe indicar en los argumentos el parámetro a cambiar (\textit{key}) y
+          el nuevo valor (\textit{value}). Se usa principalmente para
+          especificar la dirección del servidor maestro.
+\end{itemize}
+
+Definir los comandos es relativamente sencillo gracias a la librería
+\textit{click}. Sencillamente, definimos una función Python para cada comando y
+usamos decoradores para indicar que es un comando y definir los argumentos y
+opciones, de forma similar a lo que hacíamos con \textit{hug} para definir los
+controladores de la API REST del servidor. En el listado de código
+\ref{lst:04-cli_task_add_command} se muestra la función implementada para el
+comando \texttt{shipyard task add}. Vamos a explicar qué significa cada
+decorador usado:
+
+\begin{itemize}
+    \item \texttt{@task.command}: Normalmente, se usa el decorador
+          \texttt{@click.command} para indicar que una función es un comando de la
+          aplicación. Aquí, se usa \texttt{task} debido a que es un subcomando del
+          comando base con el mismo nombre.
+    \item \texttt{@click.pass\_obj}: Usado para pasar el contexto de la
+          aplicación, que contiene el servicio apropiado (en este caso, el de tareas),
+          a la función.
+    \item \texttt{@click.option}: Son las opciones no requeridas que se pueden
+          indicar en la ejecución del comando. Pueden ser de cualquier tipo y, como
+          ocurre en el ejemplo mostrado, de uso múltiple.
+    \item \texttt{@click.argument}: Los argumentos obligatorios del comando.
+          Pueden ser de cualquier tipo.
+\end{itemize}
+
+Como se puede apreciar en el listado; el contexto, las opciones y los argumentos
+son también argumentos de la función. Entrando ya en la implementación de la
+operación como tal, se puede ver como se crea el objeto \texttt{Task} con los
+datos dados usando un esquema definido con la librería \textit{marshmallow}.
+Igual que ocurría en el servidor, usamos esta librería para facilitar el trabajo
+con los recursos, haciendo muy sencillo el paso de objeto Python a diccionario y
+viceversa.
+
+\begin{lstlisting}[
+    language=Python,
+    caption={Comando para la creación de una nueva tarea.},
+    label={lst:04-cli_task_add_command},
+    showstringspaces=false
+]
+@task.command()
+@click.pass_obj
+@click.option(
+    '--device', type=str, multiple=True,
+    help='A device needed for the task.'
+)
+@click.argument('name', type=str)
+@click.argument('runtime', type=int)
+@click.argument('deadline', type=int)
+@click.argument('period', type=int)
+@click.argument('file', type=click.File('rb'))
+def add(service, device, name, runtime, deadline, period, file):
+    try:
+        task = Task.Schema().load({
+            'name': name,
+            'runtime': runtime,
+            'deadline': deadline,
+            'period': period,
+        })
+        task.devices = list(d for d in device)
+        new_id = service.create(task, file)
+        click.echo(f'Added new task with ID {new_id}')
+    except Exception as e:
+        click.echo('Unable to add new task:\n' + str(e))
+\end{lstlisting}
+
+En los servicios, se hace uso de la librería \textit{requests} para realizar las
+peticiones HTTP al servidor. La función del servicio de nodos encargada de su
+modificación se puede ver en \ref{lst:04-cli_node_service_update}. Aquí, se
+aprecia cómo se construyen estas peticiones con los disintos verbos HTTP
+(\texttt{requests.get} y \texttt{requests.put}) y se gestionan las respuestas
+recibidas, comprobando su código de estado para devolver un resultado o lanzar
+el error correspondiente.
+
+\begin{lstlisting}[
+    language=Python,
+    caption={Función del servicio de nodos para su modificación.},
+    label={lst:04-cli_node_service_update},
+    showstringspaces=false
+]
+def update(self, node_key: str, new_values: dict) -> Node:
+    if not bson.ObjectId.is_valid(node_key):
+        response = requests.get(
+            self.base_url + '/nodes?name=' + node_key)
+        if response.status_code != HTTPStatus.OK:
+            raise StatusError(response.json()['error'])
+        node_key = response.json()['_id']
+
+    response = requests.put(
+        self.base_url + '/nodes/' + node_key,
+        json=new_values
+    )
+    if response.status_code == HTTPStatus.OK:
+        return Node.Schema().load(response.json())
+    else:
+        raise StatusError(response.json()['error'])
+\end{lstlisting}
 
 \subsection{Prueba}
 
+Para el cliente también se han implementado algunas pruebas unitarias que
+validan su comportamiento, aunque solo de los comandos. Al igual que
+\textit{hug}, \textit{click} proporciona mecanismos para la prueba de los
+comandos implementados. En el listado \ref{lst:04-cli_task_test_setup} se
+muestra el método del \textit{TestCase} de los comandos de las tareas encargado
+de preparar la ejecución de las pruebas. Como se puede apreciar, se usa un
+objeto \texttt{CliRunner} que simula la ejecución por consola. También se crea
+una configuración de prueba. Además de esto, también es necesario maquetar el
+servicio correspondiente, igual que ocurría con las pruebas de los controladores
+del servidor.
+
+\begin{lstlisting}[
+    language=Python,
+    caption={Función preparatoria para las pruebas de los comandos de las tareas.},
+    label={lst:04-cli_task_test_setup}
+]
+@classmethod
+def setUpClass(self):
+    self.runner = CliRunner()
+    self.config = Config(server_url='test', server_port='test')
+\end{lstlisting}
+
+Las funciones de prueba como tal usan este \texttt{CliRunner} para simular la
+ejecución de los comandos. En el listado \ref{lst:04-cli_task_create_test} se
+puede ver como se utiliza para probar el comando de creación de tareas. Con la
+función \texttt{invoke}, se ejecuta el comando con distintos argumentos y
+opciones y se comprueba que la salida es la correcta.
+
+\begin{lstlisting}[
+    language=Python,
+    caption={Prueba del comando de creación de una nueva tarea.},
+    label={lst:04-cli_task_create_test},
+    showstringspaces=false
+]
+def test_add(self):
+    with self.runner.isolated_filesystem():
+        with open('test.tar.gz', 'wb') as f:
+            f.write(str.encode('Test'))
+
+        result = self.runner.invoke(
+            task,
+            ['add', 'Test', '1000', '1000', '1000',
+                'test.tar.gz'],
+            obj=self.config
+        )
+        self.assertIn('Added new task', result.output)
+
+        result = self.runner.invoke(
+            task,
+            ['add', '--device', '/dev/null', 'Test',
+                '1000', '1000', '1000', 'test.tar.gz'],
+            obj=self.config
+        )
+        self.assertIn('Added new task', result.output)
+
+        result = self.runner.invoke(
+            task,
+            ['add', 'Test1', '1000', '1000', '1000',
+                'test.tar.gz'],
+            obj=self.config
+        )
+        self.assertIn('Unable to add new task', result.output)
+\end{lstlisting}
+
 \subsection{Integración continua}
+
+Las pruebas que se acaban de describir también se ejecutan de forma automática
+cuando se realiza algún cambio en la base de código del cliente mantenida en su
+repositorio de GitHub. Un flujo de trabajo casi idéntico al usado en el servidor
+se encarga de lanzar estas pruebas y enviar el informe de cobertura generado a
+Codecov.
+
+No obstante, el cliente no se distribuye como una imagen Docker, como sí ocurría
+con el servidor. Se ha optado mejor por publicarlo como un paquete de
+PyPI\footnote{Enlace al paquete en PyPI:
+    \url{https://pypi.org/project/shipyard-cli/}}, que es el repositorio de software
+principal de Python, donde se encuentra la gran mayoría de paquetes y con el que
+trabaja el gestor de dependencias \texttt{pip} por defecto. Para poder publicar
+el paquete en esta plataforma, se añade un fichero \texttt{setup.py} a la raíz
+del proyecto con los atributos del mismo (p. ej., autor, descripción,
+dependencias, \dots). Luego, se define una acción en el repositorio de GitHub
+que se encarga de construir el artefacto y publicarlo en PyPI cada vez que se
+publique una nueva versión. Gracias a esto, el cliente se puede instalar tan
+solo ejecutando \texttt{pip install shipyard-cli}.
 
 \section{Imagen base}
 
