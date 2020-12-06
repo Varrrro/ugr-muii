@@ -1099,7 +1099,7 @@ asegurar que no se pueden crear elementos duplicados.
 Para facilitar el despliegue de este servidor en múltiples plataformas, se ha
 definido una imagen Docker sencilla. Esta imagen se puede encontrar en el
 repositorio de DockerHub\footnote{Enlace a la imagen:
-    \url{https://hub.docker.com/repository/docker/varrrro/shipyard-server}}. La
+    \url{https://hub.docker.com/r/varrrro/shipyard-server}}. La
 construcción de la imagen se realiza de forma automática cuando se publica una
 nueva versión del servidor en el repositorio de GitHub del mismo gracias a
 GitHub Actions. Esta funcionalidad de GitHub permite definir secuencias de pasos
@@ -1497,8 +1497,181 @@ solo ejecutando \texttt{pip install shipyard-cli}.
 
 \section{Imagen base}
 
+Normalmente, al implementar un proceso de tiempo real en Linux, el desarrollador
+dedica una parte del código a fijar la política y los parámetros de
+planificación deseados. En nuestro sistema, si dejáramos esta responsabilidad en
+los desarrolladores de las tareas, se podrían producir inconsistencias entre los
+parámetros indicados al añadir la tarea y los usados finalmente en la
+planificación de la misma, además de no poder el sistema controlar y ajustar
+estos valores.
+
+Para evitar esto, se proporciona una librería C en una imagen Docker que debe
+ser usada como imagen base por todas las tareas que se quieran desplegar con el
+sistema.
+
 \subsection{Diseño e implementación}
+
+Como ya se indicó en la sección \ref{sec:02-real_time}, la política de
+planificación \texttt{SCHED\_DEADLINE} de Linux para procesos de tiempo real es
+la usada en nuestro sistema debido a ser dinámica y adaptarse a nuestras
+necesidades. Aunque esta política forma parte del kernel de Linux desde la
+versión 3.14, las funciones y estructuras necesarias para implementar procesos
+que usen esta planificación no son todavía ofrecidas por las librerías estándar.
+Un usuario que desee usar \texttt{SCHED\_DEADLINE} para ejecutar procesos debe
+proporcionar la implementación de las funciones \texttt{sched\_setattr} y
+\texttt{sched\_getattr}, además de la estructura \texttt{sched\_attr}. Aunque
+esta implementación es simple, tener que incorporarla para cada proceso es una
+inconveniencia. Por ello, se ha decidido implementar estos elementos en la
+librería que se ofrece a los usuarios para apoyar el desarrollo de tareas que se
+desplieguen dentro del sistema \textit{shipyard}.
+
+Como ya se ha indicado al principio de esta sección, el objetivo principal de la
+librería no es realmente proporcionar estas funciones, las cuáles ni siquiera
+son accesibles desde el exterior de la misma, sino establecer el mecanismo
+mediante el cuál las tareas del sistema definen sus atributos de planificación y
+se ejecutan. La librería expone una única función, \texttt{set\_sched}, cuya
+implementación se puede ver en el listado \ref{lst:04-library_set_sched} y que
+debe ser ejecutada al inicio de cada tarea que se despliega.
+
+\begin{lstlisting}[
+    language=C,
+    caption={Función encargada de fijar los parámetros de planificación.},
+    label={lst:04-library_set_sched}
+]
+int set_sched()
+{
+    struct sched_attr attr;
+    int runtime;
+    int deadline;
+    int period;
+    int ret;
+
+    runtime = atoi(getenv("TASK_RUNTIME"));
+    deadline = atoi(getenv("TASK_DEADLINE"));
+    period = atoi(getenv("TASK_PERIOD"));
+
+    attr.size = sizeof(attr);
+    attr.sched_flags = 0;
+    attr.sched_nice = 0;
+    attr.sched_priority = 0;
+    attr.sched_policy = SCHED_DEADLINE;
+    attr.sched_runtime = runtime;
+    attr.sched_deadline = deadline;
+    attr.sched_period = period;
+
+    ret = sched_setattr(gettid(), &attr, 0);
+    if (ret < 0)
+    {
+        return -1;
+    }
+
+    return 0;
+}
+\end{lstlisting}
+
+Observando la función, se aprecia como ésta sencillamente obtiene los valores
+del tiempo de ejecución, el límite de tiempo y el período para la tarea de
+variables de entorno y, luego, los incorpora a una estructura
+\texttt{sched\_attr} con la que establece la planificación llamando a la función
+\texttt{sched\_setattr}.
+
+Aunque es suficiente con aportar la librería para que los usuarios del sistema
+implementen sus tareas, hemos decidido proporcionar esta librería dentro de una
+imagen Docker que las imágenes de estas tareas puedan usar como base. El proceso
+planteado para la ejecución de las tareas es el siguiente:
+
+\begin{enumerate}
+    \item Al ejecutar la operación de despliegue, el servidor lanza en el nodo
+          el contenedor de la tarea, pasándole los parámetros de planificación de la
+          misma como variables de entorno.
+    \item El proceso del usuario importa la librería y ejecuta la función
+          \texttt{set\_sched}.
+    \item Se fija la planificación extrayendo los parámetros de las variables de
+          entorno.
+\end{enumerate}
+
+De esta forma, aseguramos que el sistema tiene el control sobre la planificación
+de las tareas y evitamos problemas de inconsistencia.
+
+En el listado de código \ref{lst:04-library_dockerfile} se muestra la definición
+de la imagen Docker de la librería. Básicamente, en la construcción de la imagen
+se copian los ficheros de la librería y se compila, obteniendo un objeto
+estático que luego será enlazado por la tarea durante su compilación. Además, se
+definen tres variables de entorno dentro del contenedor: \texttt{SRC\_DIR},
+\texttt{LIB\_DIR} y \texttt{LIB\_NAME}. Estas variables contienen las rutas de
+los directorios con el código fuente y los artefactos compilados, además del
+nombre de la librería, respectivamente. Son utilizadas en las imágenes de las
+tareas de los usuarios para poder enlazar la librería en la compilación.
+
+\begin{lstlisting}[
+    language=Dockerfile,
+    caption={Definición de la imagen Docker para la librería.},
+    label={lst:04-library_dockerfile}
+]
+FROM gcc:10
+
+# Change dir and copy files
+WORKDIR /shipyard
+COPY src/ src/
+COPY Makefile .
+
+# Build static library
+RUN make
+
+# Set up env vars and change dir for child images
+ENV SRC_DIR /shipyard/src
+ENV LIB_DIR /shipyard/build
+ENV LIB_NAME shipyard
+WORKDIR /task
+\end{lstlisting}
+
+Un ejemplo de \texttt{Dockerfile} para una tarea simple lo podemos ver en el
+listado \ref{lst:04-library_task_example}. Las variables de entorno
+\texttt{SRC\_DIR}, \texttt{LIB\_DIR} y \texttt{LIB\_NAME} se usan tal y como
+acabamos de comentar. La imagen \texttt{gcc:10} en la que se basa la imagen de
+la librería es multiarquitectura, de forma que las imágenes basadas en ella se
+pueden construir y ejecutar en multitud de plataformas diferentes.
+
+\begin{lstlisting}[
+    language=Dockerfile,
+    caption={Ejemplo de definición de imagen para una tarea del sistema.},
+    label={lst:04-library_task_example}
+]
+FROM varrrro/libshipyard
+
+COPY task.c .
+
+RUN gcc -o task task.c -L$LIB_DIR -I$SRC_DIR -l$LIB_NAME
+
+CMD [ "./task" ]
+\end{lstlisting}
 
 \subsection{Integración continua}
 
+De manera muy similar a lo que sucedía con el servidor, para la librería también
+se ha definido una acción de GitHub que se encarga de construir de manera
+automática la imagen Docker y publicarla en DockerHub\footnote{Enlace a la
+    imagen en DockerHub: \url{https://hub.docker.com/r/varrrro/libshipyard}} para
+cada nueva \textit{release} de la librería que se realice en el repositorio. La
+única diferencia radica en que la imagen de la librería es multiplataforma, como
+ya se ha comentado en la subsección anterior, lo que hace que sea ligeramente
+diferente el proceso de construcción.
+
+Para poder construir imágenes multiplataforma, se debe hacer uso de la nueva
+utilidad Buildx de Docker. Adortunadamente, Docker ofrece tareas de GitHub
+Actions ya preparadas para usar este nuevo método de construcción, con lo que
+solo tenemos que especificar las plataformas deseadas en la tarea. Para esta
+nueva versión, se soportan solo amd64, arm64 y armv7, ya que son a las que se ha
+tenido acceso para su validación, aunque en teoría la imagen debería funcionar a
+la perfección en todas las plataformas en las que funciona la imagen
+\texttt{gcc:10} en la que se basa.
+
 \section{Análisis del rendimiento}
+
+Para completar la presentación de esta primera versión de la herramienta, se ha
+querido realizar una breve caracterización de su rendimiento. En concreto, lo
+que se ha medido es la latencia en el despliegue de las tareas, es decir, el
+tiempo que pasa desde que se inicia la operación de despliegue hasta que la
+tarea comienza a ejecutarse en el nodo objetivo.
+
+blablabla faltan los resultados
