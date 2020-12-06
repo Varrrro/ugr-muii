@@ -1,0 +1,139 @@
+\chapter{Conclusiones}
+Una vez finalizado el proyecto, en esta sección se va a analizar el grado de
+cumplimiento de los objetivos planteados al inicio del mismo y las sensaciones
+que deja su desarrollo. Además, se discutirán posibles mejoras al sistema
+planteado de cara a su futura extensión.
+
+\section{Principales conclusiones}
+
+Durante el desarrollo de este proyecto, se ha realizado una investigación
+profunda y detallada sobre las tecnologías de virtualización y los conceptos más
+importantes de la computación de tiempo real, buscando la manera de combinar
+ambos aspectos para proporcionar una solución eficaz y práctica al problema
+planteado por el IoT industrial. En este sentido, se ha estudiado la estructura
+y funcionamiento de los sistemas operativos de tiempo real, incluyendo los
+principales algoritmos de planificación de procesos con restricciones
+temporales. También se ha analizado la situación de las soluciones basadas en
+el kernel de Linux existentes en este campo, cumpliendo así con los primeros
+objetivos planteados.
+
+Estudiando las tecnologías de virtualización, planteamos que podía ser viable el
+uso de contenedores para el despliegue sencillo de tareas de tiempo real en
+múltiples dispositivos. Centrándonos en Docker, observamos que proporciona las
+medidas de aislamiento entre procesos necesarias para la seguridad de los
+sistemas, además de mecanismos y herramientas que facilitan el despliegue de sus
+contenedores en plataformas de diversas arquitecturas. Al ser ejecutados por la
+CPU como procesos normales, en teoría los procesos contenerizados podrían ser
+planificados y controlados usando las políticas ya conocidas de planificación de
+procesos en tiempo real. En el capítulo \ref{ch:03-performance_analysis} se
+analizó el impacto que tiene el uso de contenedores sobre la latencia en la
+activación de es tos procesos, concurriendo en que, aunque existente, este
+impacto no es demasiado pronunciado y sigue siendo viable el uso de contenedores
+para tareas con restricciones blandas, no para las duras. Con las pruebas
+realizadas también nos dimos cuenta de que los mecanimos de gestión del ciclo de
+vida de los contenedores que implementa Docker no ofrecen el comportamiento
+determinista que necesitaríamos para incorporarlos a sistemas de tiempo real.
+Por ello, aunque los procesos contenerizados sí son viables, las tareas de
+despliegue los mismos se deben realizar de antemano.
+
+En líneas generales, consideramos que los resultados apoyan claramente la
+factibilidad del uso de contenedores para el despliegue de tareas de tiempo real
+blandas. Con esto en mente, planteamos el diseño de una herramienta para
+gestionar el despliegue de estas tareas sobre múltiples dispositivos de forma
+centralizada y sencilla. El producto final que se ha implementado constituye una
+prueba de concepto de lo que es posible realizar en este contexto, permitiendo
+llevar a cabo las tareas deseadas y cumpliendo con los objetivos propuestos para
+el mismo. Aún así, se trata de un software joven donde todavía se pueden
+encontrar algunos errores y, sobre todo, para el que es necesario un mayor
+período de prueba y validación antes de ser considerado su uso en entornos de
+producción.
+
+Esto, sumado a las buenas sensaciones obtenidas del uso inicial del sistema
+desarrollado y a los resultados de la experimentación llevada a cabo, nos
+permiten afirmar que el resultado del proyecto ha sido satisfactorio, aunque aún
+queda trabajo por realizar para poder obtener una solución completamente pulida.
+
+\section{Opinión personal}
+
+Originalmente, este trabajo iba a estar más enfocado a una aplicación práctica
+del uso de contenedores para el control de un dispositivo (p. ej., un brazo
+robótico) de forma distribuida, aprovechando las características de los
+contenedores para migrar los procesos de control de forma entre plataformas,
+mejorando la fiabilidad y resiliencia del sistema. Debido a la situación
+sanitaria, nos vimos obligados a cambiar el enfoque del trabajo hacia un
+proyecto que fuera más factible de realizar en el contexto actual del
+teletrabajo, pero manteniendo aún el deseo de ahondar en el uso de contenedores
+para este tipo de aplicaciones. Así fue como llegamos a la idea del proyecto
+final que se ha explicado a lo largo de este documento. A pesar de tener que
+realizar este cambio, creo que las lecciones aprendidas durante su desarrollo
+son muy valiosas, además de considerar que el sistema desarrollado sirve como
+una clara prueba de la utilidad de las tecnologías de contenerización para la
+implantación de los paradigmas del fog y edge computing.
+
+Además de la situación extraordinaria en la que he tenido que desarrollar el
+trabajo, los temas tratados en el mismo considero que son bastante complejos y,
+en mi caso, completamente nuevos, lo que ha contribuido a su dificultad. No
+obstante, considero que se trata de un conocimiento muy valioso que he obtenido
+y es un área de conocimiento que me interesa y sobre la que quiero continuar
+formándome.
+
+El desarrollo de un sistema completo como este también me ha permitido
+aplicar las técnicas y procedimientos de Ingeniería del Software que he
+adquirido durante mi formación como ingeniero, lo cual considero muy valioso ya
+que me proporciona experiencia en un proyecto real y completo. Mis conocimientos
+de Python, Docker y sistemas operativos también se han ampliado y consolidado,
+lo que considero que es muy positivo.
+
+En general, estoy satisfecho tanto con el trabajo realizado como con los
+resultados obtenidos. Creo firmemente que los contenedores son clave para la
+implementación de modelos fog o edge en la industria, y pienso que el sistema
+que he desarrollado es una buena prueba de concepto del tipo de herramientas que
+serían necesarias para controlar esta clase de despliegues.
+
+\section{Trabajo futuro}
+
+En el marco del uso de contenedores para el despliegue de tareas de tiempo real,
+se ha visto que es necesario invertir en el desarrollo de un motor especialmente
+diseñado e implementado para este caso de uso, que asegure un comportamiento
+determinista en sus operaciones y tenga en cuenta las particularidades de la
+computación en tiempo real a la hora de ejecutar los contenedores. Estos
+contenedores podrían usarse para combinar cargas de trabajo críticas y no
+críticas, pero para ello es necesario, como ya indicaba Burns en
+\cite{burns_mixed_2015}, disponer de métodos de análisis general para sistemas
+de criticalidad mixta que tengan en cuenta todos los recursos del sistema.
+
+En lo que respecta a la herramienta desarrollada en este trabajo, está claro que
+se necesita hacer más hincapié en su validación, siendo necesario realizar más
+pruebas con cargas de trabajo reales. También sería necesario añadir
+procedimientos para gestionar el despliegue sobre dispositivos multiprocesador,
+ya que actualmente esta situación no se maneja adecuadamente. El sistema
+desarrollado solo puede ser pensado para el despliegue de tareas de tiempo real
+blandas, ya que se ve limitado por el uso de Docker y su rendimiento. No
+obstante, nada nos hace pensar que, si se consigue un motor de contenedores
+especializado como el ya comentado, no se pueda usar también para tareas con
+restricciones duras, aunque sería necesario llevar a cabo un proceso de
+validación aún más intenso.
+
+Desde el punto de vista de la usabilidad del sistema, sería muy beneficioso
+contar con un cliente con interfaz gráfica para su gestión. Aunque el cliente de
+línea de comandos que se ha implementado en este trabajo permite al usuario
+acceder a todas las funcionalidades que ofrece el sistema actualmente, es cierto
+que este tipo de aplicaciones no son tan sencillas de usar como, por ejemplo,
+una aplicación web. Un panel de control gráfico facilita mucho a los usuarios el
+control del sistema, ya que este se realiza de forma mucho más visual e
+intuitiva que con la aplicación de línea de comandos ofrecida.
+
+También hay algunas funcionalidades que consideramos que deberían añadirse al
+sistema antes de poder ser usado en entornos reales, entre las que destaca
+principalmente la capacidad de monitorizar el rendimiento de las tareas
+desplegadas, controlando aspectos como el número de veces que se excede el
+tiempo de ejecución definido o que se imcumple el límite de tiempo fijado. Esta
+información es realmente útil para los usuarios del sistema, ya que les
+permitiría comprobar el correcto funcionamiento del mismo y realizar ajustes
+para su optimización. De la mano de esta funcionalidad, otra línea de trabajo
+muy interesante sería la modificación dinámica de los atributos de planificación
+de las tareas en base a los datos recogidos en su monitorización. Se podría
+incorporar alguna heurística o, incluso, alguna solución más compleja de
+aprendizaje automático que permitiera modificar tanto el tiempo de ejecución
+como el límite de tiempo de una tarea en un nodo concreto en función de cómo
+esté rindiendo o si está cumpliendo o no con las restricciones planteadas.
