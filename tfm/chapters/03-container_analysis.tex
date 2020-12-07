@@ -1,35 +1,64 @@
 \chapter{Análisis del rendimiento de procesos contenerizados}
 \label{ch:03-performance_analysis}
 
-Para comprobar cómo de factible es la idea de la ejecución de procesos de tiempo
-real virtualizados mediante contenedores, hemos llevado a cabo una serie de
-pruebas con el objetivo de caracterizar algunos aspectos de su funcionamiento.
-Todas las pruebas han sido realizadas sobre el dispositivo Raspberry Pi
-detallado en la sección \ref{sec:01-tools}. Se ha hecho uso de la suite de
-pruebas \texttt{rt-tests}, la cuál contiene múltiples utilidades para obtener
-métricas sobre el rendimiento del kernel de Linux relevantes en entornos de
-tiempo real. Dentro de todas las pruebas posibles que contiene
-\texttt{rt-tests}, \texttt{cyclicdeadline} ha sido la utilizada. Esta prueba,
-derivada del conocido \texttt{cyclictest}, mide la latencia en la activación de
-tareas de tiempo real, es decir, la diferencia de tiempo entre el momento en el
-que se debería activar una tarea y en el que se activa realmente. La principal
-diferencia entre \texttt{cyclictest} y \texttt{cyclicdeadline} reside en que la
-primera mide la latencia para tareas planificadas con \texttt{SCHED\_FIFO}
-(planificación estática), mientras que la segunda hace lo propio con
-\texttt{SCHED\_DEADLINE}. Como se ha indicado en la sección
+A lo largo del capítulo anterior se han tomado varias decisiones respecto a las
+tecnologías que se van a utilizar en el proyecto. El uso de Linux como
+plataforma para la ejecución de tareas de tiempo real parte del objetivo
+propuesto para este trabajo de analizar las soluciones de tiempo real basadas en
+este kernel. Dentro de estas soluciones, aunque las de mayor rendimiento son las
+basadas en co-kernels (p. ej., Xenomai y RTAI), hemos optado por usar el parche
+\texttt{PREEMPT\_RT}, que aporta las capacidades de tiempo real al propio kernel
+de Linux, apoyando nuestra elección en su adherencia a la interfaz estándar del
+kernel y la posibilidad de usar las tecnologías de virtualización más conocidas
+del mercado. En la sección \ref{sec:02-virtualization} se comprobaba que el
+rendimiento de los distintos motores de contenedores es similar, de forma que
+decidimos usar Docker para la virtualización de los procesos de tiempo real
+debido a ser el motor más maduro y popular.
+
+Una vez definida esta configuración, hemos decidido evaluar su rendimiento
+realizando una serie de pruebas. Dado que el rendimiento de Linux con
+\texttt{PREEMPT\_RT} es un aspecto que ya ha sido estudiado enormemente en la
+bibliografía, nuestro objetivo es más bien analizar el uso de Docker sobre esta
+plataforma. Nuestras pruebas se han realizado sobre el dispositivo Raspberry Pi
+detallado en la sección \ref{sec:01-tools}. Debido a sus características, la
+Raspberry Pi es un dispositivo muy similar a los que nos podríamos encontrar en
+una hipotética capa \textit{edge}, de forma que nos sirve para obtener unos
+resultados orientativos del rendimiento que se podría obtener en este entorno.
+
+Existen múltiples proyectos comunitarios enfocados a proporcionar utilidades
+para la prueba de las características de tiempo real del kernel de Linux, como
+es el caso del \textit{Linux Test Project}. Se trata de un conjunto de casos de
+prueba para validar la fiabilidad, robustez y estabilidad de Linux, con algunos
+orientados a los aspectos de computación en tiempo real. Otro ejemplo lo tenemos
+en la suite de pruebas \texttt{rt-tests}, que recoge una serie de programas o
+\textit{benchmarks} especialmente centrados en las políticas de planificación de
+tiempo real. Hemos decidido usar esta suite en lugar de LTP u otras alternativas
+debido a la presencia del programa de prueba \texttt{cyclicdeadline}, que es un
+derivado del conocido \texttt{cyclictest}. El objetivo de estos dos programas es
+evaluar la latencia en la activación de procesos de tiempo real, es decir, la
+diferencia de tiempo entre el momento en el que se debería activar una tarea y
+en el que se activa realmente. En \texttt{cyclictest}, esto se hace definiendo
+un número determinado de hilos a los que se asignan prioridades diferentes para
+ser planificados con la política \texttt{SCHED\_FIFO}. Estos hilos se activan de
+forma periódica y se registran las latencias. La principal diferencia que
+incorpora \texttt{cyclicdeadline} es el uso de tareas verdaderamente periódicas
+planificadas con \texttt{SCHED\_DEADLINE}. Se mide entonces la latencia en la
+activación de las tareas para cada período. Como se ha indicado en la sección
 \ref{sec:02-real_time}, esta última es la política de planificación elegida para
 el sistema que se desea desarrollar, razón por la cuál hemos decidido usar
-\texttt{cyclicdeadline}.
+\texttt{cyclicdeadline} en busca de unos resultados que sean más representativos
+del uso real que tendrá el sistema.
 
 Concretamente, se han hecho varias ejecuciones de esta prueba aumentando cada
-vez el número de hilos de tiempo real que se debían ejecutar y observar. Para
-todos los hilos, el límite de tiempo o \textit{deadline} ha sido de 1000$\mu s$.
-Estas pruebas se han realizado dos veces: primero, ejecutando
-\texttt{cyclicdeadline} de forma «nativa» y, luego, dentro de un contenedor. La
-definición de la imagen Docker que contiene la prueba, así como los pasos
-seguidos para su ejecución, son explicados detalladamente en el apéndice
-\ref{app:C-container_tests}. Los resultados obtenidos son los mostrados en la
-tabla \ref{tab:03-cyclicdeadline_latency}. Cabe destacar que
+vez el número de hilos de tiempo real que se debían ejecutar y observar para
+poner una carga mayor sobre el procesador y aumentar la complejidad de la
+planificación. Para todos los hilos, el límite de tiempo o \textit{deadline} ha
+sido de 1000$\mu s$. Estas pruebas se han realizado dos veces: primero,
+ejecutando \texttt{cyclicdeadline} de forma «nativa» y, luego, dentro de un
+contenedor. La definición de la imagen Docker que contiene la prueba, así como
+los pasos seguidos para su ejecución, son explicados detalladamente en el
+apéndice \ref{app:C-container_tests}. Los resultados obtenidos son los mostrados
+en la tabla \ref{tab:03-cyclicdeadline_latency}. Cabe destacar que
 \texttt{cyclicdeadline} solo nos devuelve al final de su ejecución, para cada
 uno de los hilos, los valores mínimo, máximo y medio de la latencia. Por ello,
 los resultados de la tabla para ejecuciones con más de un hilo muestran
@@ -160,3 +189,11 @@ en su diseño.
         contenedores implementados con distintos lenguajes.}
     \label{fig:03-container_latency}
 \end{figure}
+
+Sería muy interesante ejecutar estas mismas pruebas usando algún otro motor de
+contenedores (p. ej., Podman, Kata, rkt) y así comprobar si, aunque en su
+análisis general el rendimiento es similar, en la ejecución de procesos de
+tiempo real se observa alguna diferencia. Es más, también se podría probar una
+configuración basada en hipervisores para comparar su rendimiento con el de los
+contenedores, aunque ya se vió en la sección \ref{sec:02-virtualization} que
+éste debería ser parecido \cite{manco_my_2017} \cite{felter_updated_2015}.
