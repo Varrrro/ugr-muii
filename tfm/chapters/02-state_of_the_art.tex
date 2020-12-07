@@ -37,12 +37,13 @@ con las limitaciones del hardware \cite{lee_introduction_2016}.
 En algunos casos, estos sistemas son críticos, lo que significa que un fallo en
 su funcionamiento supone daños graves a las personas o al medio ambiente. Este
 es el caso de los aviones, los trenes o las plantas nucleares, por ejemplo. En
-estos sistemas, cobra especial importancia el concepto de confiabilidad, es
-decir, garantizar el correcto funcionamiento del sistema en todo momento. En la
-figura \ref{fig:01-dependability} se pueden apreciar los atributos que debe
-poseer un sistema confiable. A nivel de software, existen arquitecturas y
-patrones de diseño orientados a garantizar la tolerancia ante los fallos del
-mismo \cite{pullum_software_2001}\cite{randell_system_1975}. Por otra parte, la
+estos sistemas, cobra especial importancia el concepto de confiabilidad
+(\textit{dependability}), es decir, garantizar el correcto funcionamiento del
+sistema en todo momento. En la figura \ref{fig:02-dependability} se pueden
+apreciar los atributos que debe poseer un sistema confiable. A nivel de
+software, existen arquitecturas y patrones de diseño orientados a garantizar la
+tolerancia ante los fallos del mismo
+\cite{pullum_software_2001}\cite{randell_system_1975}. Por otra parte, la
 replicación de componentes \cite{hutchison_dependable_2006} es una técnica muy
 usada tanto para el software como el hardware. Lo que se intenta con la
 replicación es asegurar que un cálculo o procesamiento se lleva a cabo de forma
@@ -64,9 +65,9 @@ cada uno de ellos.
 
 \begin{figure}
   \centering
-  \includegraphics[width=\textwidth]{01-introduction/dependability.png}
+  \includegraphics[width=\textwidth]{02-state_of_the_art/dependability.png}
   \caption{Principales aspectos de la confiabilidad.}
-  \label{fig:01-dependability}
+  \label{fig:02-dependability}
 \end{figure}
 
 Para muchos sistemas de control, el tiempo es también un aspecto relevante a la
@@ -86,12 +87,12 @@ Comúnmente, se suelen clasificar las tareas en dos tipos dependiendo de las
 consecuencias de incumplir con sus restricciones temporales:
 
 \begin{itemize}
-  \item Tareas de tiempo real «blandas»: Se denominan así aquellas tareas en las
-        que no completar las mismas antes del límite supone una reducción en la
-        calidad del servicio (QoS).
-  \item Tareas de tiempo real «duras»: En estas tareas, el no cumplir con las
-        restricciones temporales supone un fallo grave del sistema con posibles
-        consecuencias catastróficas.
+  \item Tareas de tiempo real «blandas» (\textit{soft real-time tasks}): Se
+        denominan así aquellas tareas en las que no completar las mismas antes
+        del límite supone una reducción en la calidad del servicio (QoS).
+  \item Tareas de tiempo real «duras» (\textit{hard real-time tasks}): En estas
+        tareas, el no cumplir con las restricciones temporales supone un fallo
+        grave del sistema con posibles consecuencias catastróficas.
 \end{itemize}
 
 Para implementar estos sistemas, se hace uso de herramientas y algoritmos de
@@ -628,8 +629,11 @@ para dicho conjunto, definida como
 \end{equation}
 
 por Liu y Layland \cite{liu_scheduling_1973}, donde $C_{i}$, $D_{i}$ y $T_{i}$
-son el tiempo de ejecución, límite temporal y período para la tarea $i$ del
-conjunto, respectivamente.
+son el tiempo de ejecución ($WCET$), límite temporal y período para la $i$-ésima
+tarea del conjunto, respectivamente. Esta fórmula nos permite calcular, para un
+conjunto de tareas, el porcentaje de CPU que se usa. Una utilización de 1
+significa que se está aprovechando al máximo, mientras que un valor menor
+implica que hay un porcentaje de su capacidad que queda libre.
 
 Anteriormente, se ha indicado que la planificación de procesos de tiempo real es
 apropiativa, de forma que el sistema operativo puede retirarle a un proceso los
@@ -656,15 +660,15 @@ como
   U \leq n(2^{\frac{1}{n}} - 1)
 \end{equation}
 
-Esto implica que, para conjuntos de tareas muy grandes ($n \rightarrow \infty$),
-la utilización de CPU tiene que ser inferior al 70\%, que es una cifra
-relativamente baja. No obstante, si se cumplen todas estas condiciones, RMS
-garantiza encontrar una planificación viable si es que existe, o lo que es lo
-mismo, es un algoritmo óptimo. Otro problema de RMS es que requiere que el
-período sea igual al límite de tiempo para cada tarea. Para solucionar este
-problema, se propone DMT (\textit{Deadline Monotonic Scheduling})
-\cite{audsley_hard_1991}, en el que los procesos se caracterizan con $C_{i} \leq
-  D_{i} \leq T_{i}$.
+Esto implica que, para un conjunto de tareas muy grande ($n \rightarrow
+  \infty$), la utilización de CPU tiene que ser inferior al 70\% para que sea
+viable, lo que es una cifra relativamente baja. No obstante, si se cumplen todas
+estas condiciones, RMS garantiza encontrar una planificación viable si es que
+existe, o lo que es lo mismo, es un algoritmo óptimo. Otro problema de RMS es
+que requiere que el período sea igual al límite de tiempo para cada tarea. Para
+solucionar este problema, se propone DMT (\textit{Deadline Monotonic
+  Scheduling}) \cite{audsley_hard_1991}, en el que los procesos se caracterizan
+con $C_{i} \leq D_{i} \leq T_{i}$.
 
 Como ya se ha comentado, el principal problema de la planificación estática es
 que se trata de algoritmos clarividentes, es decir, necesitan conocer toda la
