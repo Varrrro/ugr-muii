@@ -65,7 +65,7 @@ los resultados de la tabla para ejecuciones con más de un hilo muestran
 realmente el mínimo de los mínimos de los hilos, el máximo de los máximos y la
 media de las medias.
 
-\begin{table}
+\begin{table}[H]
     \centering
     \begin{tabular}{ | c | c | c | c | c | }
         \hline
@@ -84,6 +84,14 @@ media de las medias.
         \hline
         Contenedor    & 6              & 1                         & 700                       & 263.0                    \\
         \hline
+        Contenedor    & 7              & 1                         & 818                       & 350.29                   \\
+        \hline
+        Contenedor    & 8              & 1                         & 575                       & 226.5                    \\
+        \hline
+        Contenedor    & 9              & 1                         & 906                       & 301.78                   \\
+        \hline
+        Contenedor    & 10             & 1                         & 557                       & 249.6                    \\
+        \hline
         Nativo        & 1              & 1                         & 88                        & 17.0                     \\
         \hline
         Nativo        & 2              & 1                         & 267                       & 123.0                    \\
@@ -96,6 +104,14 @@ media de las medias.
         \hline
         Nativo        & 6              & 1                         & 613                       & 205.67                   \\
         \hline
+        Nativo        & 7              & 1                         & 551                       & 225.43                   \\
+        \hline
+        Nativo        & 8              & 1                         & 729                       & 275.88                   \\
+        \hline
+        Nativo        & 9              & 1                         & 818                       & 397                      \\
+        \hline
+        Nativo        & 10             & 1                         & 534                       & 243.2                    \\
+        \hline
     \end{tabular}
     \caption{Resultados obtenidos de la ejecución de \texttt{cyclicdeadline}.}
     \label{tab:03-cyclicdeadline_latency}
@@ -104,10 +120,12 @@ media de las medias.
 Lo que queríamos observar con estas pruebas es el impacto que tiene sobre la
 latencia el uso de Docker. En la gráfica de la figura
 \ref{fig:03-cyclicdeadline_latency}, se muestran los datos de la anterior tabla
-de forma que este impacto se hace evidente. Aunque la latencia media se mantiene
-relativamente similar, el límite superior es mayor en las ejecuciones
-contenerizadas. No obstante, el impacto no es especialmente notable, de forma
-que se puede seguir considerando como una herramienta factible para el
+de forma que este impacto se hace evidente.  Salvo algunos casos excepcionales,
+donde los resultados han sido distintos a la tendencia del conjunto, observamos
+como la latencia media se mantiene relativamente similar tanto para la ejecución
+nativa como para la contenerizada, mientras que la latencia máxima es la que
+experimenta más cambios. No obstante, el impacto no es especialmente notable, de
+forma que se puede seguir considerando como una herramienta factible para el
 despliegue de procesos de tiempo real, si bien no será recomendable para los que
 tengan unas restricciones temporales más pequeñas donde esta latencia sea
 demasiado alta.
@@ -121,16 +139,31 @@ demasiado alta.
     \label{fig:03-cyclicdeadline_latency}
 \end{figure}
 
+Para caracterizar el incremento en la latencia media aporta el uso de
+contenedores, se ha aplicado un modelo de regresión lineal sobre los datos
+obtenidos de las pruebas, eliminando los disonantes. El resultado es el que se
+muestra en la gráfica de la figura \ref{fig:03-cyclicdeadline_regression}. La
+pendiente de la línea obtenida nos indica el aumento que se produce en el
+porcentaje de incremento para cada nuevo hilo desplegado, que en este caso es
+del 1.2\%.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=\textwidth]{03-container_analysis/cyclicdeadline-regression.png}
+    \caption{Regresión lineal del incremento de latencia según el número de hilos.}
+    \label{fig:03-cyclicdeadline_regression}
+\end{figure}
+
 Hay que tener en cuenta que la ejecución de \texttt{cyclicdeadline} dentro de un
 contenedor se realiza de forma que este programa lanza los hilos de tiempo real
-dentro de su mismo contenedor, el cuál ya se encuentra en ejecución. Por ello,
-se decidió realizar una segunda prueba con el objetivo de analizar la latencia
-en el lanzamiento de los propios contenedores, dato que es especialmente
-importante en el contexto que se plantea para la herramienta de orquestación de
-tareas de tiempo real, dado que estas tareas se deben lanzar en los nodos desde
-cero. Para que la ejecución del proceso de prueba no influya en los resultados,
-se ejecuta todo este proceso desde un ordenador externo «maestro». El
-funcionamiento es el siguiente:
+dentro de su mismo contenedor, el cuál ya se encuentra en ejecución. Debido a
+esta circunstacia, se decidió realizar una segunda prueba con el objetivo de
+analizar la latencia en el lanzamiento de los propios contenedores, dato que es
+especialmente interesante en el contexto que se plantea para la herramienta de
+orquestación de tareas de tiempo real, dado que estas tareas se deben lanzar en
+los nodos desde cero. Para que la ejecución del proceso de prueba no influya en
+los resultados, se ejecuta todo este proceso desde un ordenador externo
+«maestro». El funcionamiento es el siguiente:
 
 \begin{enumerate}
     \item El maestro lanza un contenedor en la Raspberry Pi mediante SSH.
@@ -138,20 +171,35 @@ funcionamiento es el siguiente:
           maestro informando de que ha terminado su ejecución.
     \item El maestro obtiene los tiempos de creación e inicio del contenedor
           ejecutando el comando \texttt{docker inspect} mediante SSH.
-    \item La latencia se obtiene como la diferencia entre ambos tiempos.
+    \item La latencia se calcula como la diferencia entre ambos tiempos.
     \item El maestro elimina el contenedor de la Raspberry Pi mediante SSH para
           poder lanzarlo de nuevo en la siguiente iteración.
 \end{enumerate}
 
-Para comprobar también si el lenguaje usado en la implementación del proceso
-contenerizado tiene algún impacto sobre esta latencia, se han usado tres
-versiones diferentes del contenedor que se lanza sobre la Raspberry Pi, usando
-C, Go y Rust. Los tres son lenguajes compilados con similitudes en cuanto a su
-alcance (programación de sistemas) y características. En total, se han realizado
-1000 iteraciones de esta prueba para cada uno de los lenguajes. Los resultados
-obtenidos se muestran en la tabla \ref{tab:03-container_latency}. En la figura
-\ref{fig:03-container_latency} se puede observar una representación gráfica de
-todas las latencias observadas para cada iteración.
+El proceso contenerizado que se despliega en la Raspberry Pi tan solo envía un
+mensaje UDP de vuelta al maestro para informar de que ha terminado su despliegue
+y ya puede ejecutar \texttt{docker inspect} para obtener las marcas de tiempo.
+Se han desarrollado tres implementaciones diferentes de este proceso para
+comprobar si el lenguaje de programación usado tiene algún impacto sobre la
+latencia. Uno de los lenguajes usados es C, debido a que hoy día se trata de la
+\textit{lingua franca} de los lenguajes de programación y es uno de los más
+utilizados para la implementación de sistemas empotrados. Para los otros dos,
+decidimos optar por Go y Rust. Estos dos lenguajes de programación de sistemas,
+gozan de gran popularidad en la actualida entre los desarrolladores, algunos de
+los cuales los consideran como alternativas modernas a C. El principal motivo
+por el que han sido escogidos sobre otros lenguajes más conocidos como Python
+reside en que éste es interpretado, mientras que Go y Rust son compilados. En
+lenguajes interpretados es mucho más difícil asegurar que no se van a dar
+errores en tiempo de ejecución, lo que es una característica muy importante en
+el desarrollo de sistemas empotrados. C++ es otro lenguaje compilado cuyo uso se
+consideró, pero al tratarse de una extensión de C y tener un rendimiento
+prácticamente idéntico, se decidió por no incluirlo.
+
+Para cada una de las implementaciones, se han realizado 1000 iteraciones de la
+prueba, obteniendo los resultados que se muestran en la tabla
+\ref{tab:03-container_latency}. En la figura \ref{fig:03-container_latency} se
+puede observar una representación gráfica de todas las latencias observadas para
+cada iteración.
 
 \begin{table}[H]
     \centering
