@@ -1682,6 +1682,96 @@ Para completar la presentación de esta primera versión de la herramienta, se h
 querido realizar una breve caracterización de su rendimiento. En concreto, lo
 que se ha medido es la latencia en el despliegue de las tareas, es decir, el
 tiempo que pasa desde que se inicia la operación de despliegue hasta que la
-tarea comienza a ejecutarse en el nodo objetivo.
+tarea comienza a ejecutarse en el nodo objetivo. Para ello, se ha escrito un
+sencillo \textit{script} de Python que lanza la operación de despliegue en el
+servidor y espera hasta que termine para calcular la diferencia entre las marcas
+temporales. Esta operación se repite para el número de iteraciones deseado, que
+en nuestro caso han sido 1000 para obtener una muestra de datos representativa y
+observar si la ejecución prolongada tiene un impacto sobre la latencia. El
+nodo sobre el que se realiza el despliegue es la misma Raspberry Pi con la que
+se realizaron las pruebas descritas en el capítulo
+\ref{ch:03-performance_analysis}.
 
-blablabla faltan los resultados
+En la tabla \ref{tab:04-deploy_latency} se muestra un resumen de los resultados
+obtenidos. Dadas las latencias observadas para el lanzamiento de procesos
+contenerizados que se mostraban en la tabla \ref{tab:03-container_latency}, no
+nos sorprende ver que las latencias de despliegue observadas ahora son aún
+mayores. Concretamente, el incremento de la latencia media es del 191,84\%,
+provocado principalmente por las comunicaciones de red. Aún así, cabe destacar
+que las pruebas se han realizado en una red local cableada similar a la que se
+podría encontrar en algunas capas \textit{fog}.
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{ | c | c | c | c | }
+        \hline
+        \textbf{Latencia}      & \textbf{Latencia}      & \textbf{Latencia}     & \textbf{Desviación} \\
+        \textbf{mínima ($ms$)} & \textbf{máxima ($ms$)} & \textbf{media ($ms$)} & \textbf{típica}     \\
+        \hline
+        4463                   & 5938                   & 4941                  & 278                 \\
+        \hline
+    \end{tabular}
+    \caption{Resumen de los valores observados en las latencias de despliegue.}
+    \label{tab:04-deploy_latency}
+\end{table}
+
+Una circunstancia importante en la medición de estos tiempos es la construcción
+de las imágenes Docker. Si la imagen de una tarea no está presente en el nodo, debe
+construirse antes de poder ejecutar el contenedor con el proceso, incrementando
+la latencia de la operación a valores por encima de los 100 segundos.
+
+La dispersión de los resultados es también bastante alta, como se puede apreciar
+por el valor de la desviación típica. En la figura \ref{fig:04-deploy_latency} se
+presentan los valores de latencia obtenidos en una gráfica de líneas, donde esta
+dispersión es más evidente.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=\textwidth]{04-implementation/deploy-latency.png}
+    \caption{Gráfica de evolución de la latencia en el despliegue de tareas.}
+    \label{fig:04-deploy_latency}
+\end{figure}
+
+También se ha querido comprobar si la presencia de tareas en un nodo tiene algún
+impacto sobre la latencia en el despliegue de nuevas tareas. Para ello, se ha
+vuelto a ejecutar el mismo \textit{script} variando el número de tareas
+presentes en el nodo. Las tareas usadas para congestionar el nodo son sencillos
+bucles sin funcionalidad real, pero con una reserva temporal de 10 $ms$ para el
+tiempo de ejecución y 30 $ms$ para el límite temporal y el período. Los
+resultados obtenidos son los que se muestran en la gráfica de la figura
+\ref{fig:04-deploy_latency_progression}. Observando esta gráfica, queda claro
+que la congestión en el nodo aumenta la latencia del despliegue de nuevas
+tareas. Para caracterizar este incremento, se ha aplicado un modelo de regresión
+lineal sobre los valores medios de las latencias para cada caso de prueba, cuyo
+resultado es el de la figura \ref{fig:04-deploy_latency_regression}.
+
+Aunque el valor de $R^{2}$ del modelo obtenido es muy alto, es válido para datos
+experimentales como son los presentados. Observando la función que se aprecia en
+la gráfica, la pendiente de la recta nos indica el incremento en la latencia que
+podemos esperar para cada nueva tarea que se esté ejecutando en el nodo,
+mientras que la ordenada en el origen es, como era de esperar, muy similar al
+valor de la latencia media observada en la tabla \ref{tab:04-deploy_latency}.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=\textwidth]{04-implementation/deploy-latency-progression.png}
+    \caption{Gráfica de latencias observadas según el número de tareas presentes
+        en el nodo.}
+    \label{fig:04-deploy_latency_progression}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{04-implementation/deploy-latency-regression.png}
+    \caption{Regresión lineal de la latencia media según el número de tareas
+        presentes en el nodo.}
+    \label{fig:04-deploy_latency_regression}
+\end{figure}
+
+Al final, con estos resultados confirmamos algo que ya descubrimos en el
+capítulo \ref{ch:03-performance_analysis} al realizar las pruebas de latencia en
+la ejecución de contenedores: las operaciones de despliegue son demasiado lentas
+como para ejecutarse en respuesta a eventos que requieran de control en tiempo
+real. Los contenedores con las tareas de control deben estar ya ejecutándose de
+antemano en los nodos para conseguir unos tiempos de respuesta aceptables, al
+menos para tareas con restricciones más suaves.
