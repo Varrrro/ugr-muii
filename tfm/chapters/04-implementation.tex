@@ -1,4 +1,5 @@
 \chapter{Diseño e implementación de un orquestador para tareas de tiempo real}
+\label{ch:04-implementation}
 
 En los capítulos anteriores, se ha presentado el concepto de la Industria 4.0 y
 los problemas que plantea, indicando que el paradigma del \textit{fog computing}
@@ -53,8 +54,16 @@ mejor rendimiento para operaciones de entrada y salida.
 
 Por tanto, en el modelo planteado es necesario desplegar las tareas de control
 en forma de contenedores. Para explorar más este concepto, hemos decidido
-implementar una herramienta que permita realizar esto sobre múltiples nodos. Los
-objetivos de esta herramienta son:
+implementar una herramienta que permita realizar esto sobre múltiples nodos. El
+principal beneficio que esperamos obtener del uso de esta herramienta es una
+mejora en la calidad del servicio debido al despliegue uniforme y sencillo de
+tareas sobre los nodos y a la comprobación centralizada de la viabilidad de los
+conjuntos de tareas para cada nodo. El determinismo de la herramienta, vistos
+los datos de latencia obtenidos en el capítulo \ref{ch:03-performance_analysis},
+no es uno de los aspectos en los que nos centramos para su desarrollo. Asegurar
+el cumplimiento de las restricciones en cada uno de los nodos es responsabilidad
+del kernel de Linux parcheado con \texttt{PREEMPT\_RT}. Entonces, los objetivos
+de la herramienta que se va a desarrollar son:
 
 \begin{table}[H]
     \centering
@@ -1677,6 +1686,7 @@ la perfección en todas las plataformas en las que funciona la imagen
 \texttt{gcc:10} en la que se basa.
 
 \section{Análisis del rendimiento}
+\label{sec:04-performance}
 
 Para completar la presentación de esta primera versión de la herramienta, se ha
 querido realizar una breve caracterización de su rendimiento. En concreto, lo

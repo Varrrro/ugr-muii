@@ -6,35 +6,111 @@ planteado de cara a su futura extensión.
 
 \section{Principales conclusiones}
 
-Durante el desarrollo de este proyecto, se ha realizado una investigación
-profunda y detallada sobre las tecnologías de virtualización y los conceptos más
-importantes de la computación de tiempo real, buscando la manera de combinar
-ambos aspectos para proporcionar una solución eficaz y práctica al problema
-planteado por el IoT industrial. En este sentido, se ha estudiado la estructura
-y funcionamiento de los sistemas operativos de tiempo real, incluyendo los
-principales algoritmos de planificación de procesos con restricciones
-temporales. También se ha analizado la situación de las soluciones basadas en
-el kernel de Linux existentes en este campo, cumpliendo así con los primeros
-objetivos planteados.
+Para comprobar si se han cumplido los objetivos del proyecto, primero vamos a
+repasarlos brevemente. Los objetivos eran los siguientes:
 
-Estudiando las tecnologías de virtualización, planteamos que podía ser viable el
-uso de contenedores para el despliegue sencillo de tareas de tiempo real en
-múltiples dispositivos. Centrándonos en Docker, observamos que proporciona las
-medidas de aislamiento entre procesos necesarias para la seguridad de los
-sistemas, además de mecanismos y herramientas que facilitan el despliegue de sus
-contenedores en plataformas de diversas arquitecturas. Al ser ejecutados por la
-CPU como procesos normales, en teoría los procesos contenerizados podrían ser
-planificados y controlados usando las políticas ya conocidas de planificación de
-procesos en tiempo real. En el capítulo \ref{ch:03-performance_analysis} se
-analizó el impacto que tiene el uso de contenedores sobre la latencia en la
-activación de es tos procesos, concurriendo en que, aunque existente, este
-impacto no es demasiado pronunciado y sigue siendo viable el uso de contenedores
-para tareas con restricciones blandas, no para las duras. Con las pruebas
-realizadas también nos dimos cuenta de que los mecanimos de gestión del ciclo de
-vida de los contenedores que implementa Docker no ofrecen el comportamiento
-determinista que necesitaríamos para incorporarlos a sistemas de tiempo real.
-Por ello, aunque los procesos contenerizados sí son viables, las tareas de
-despliegue los mismos se deben realizar de antemano.
+\begin{enumerate}
+    \item Comprender los conceptos básicos sobre sistemas operativos de tiempo
+          real, algoritmos de planificación y sistemas de control industriales.
+    \item Analizar las soluciones de tiempo real basadas en GNU/Linux existentes.
+    \item Estudiar la viabilidad y rendimiento de las tecnologías de
+          contenerización para la ejecución de tareas con restricciones temporales.
+    \item Diseñar e implementar una herramienta de despliegue de tareas de
+          tiempo real mediante contenedores que sirva como prueba de concepto.
+    \item Caracterizar las prestaciones de la herramienta desarrollada,
+          identificando posibles aplicaciones y/o mejoras de la misma.
+\end{enumerate}
+
+En el estudio del estado de la técnica realizado en el capítulo
+\ref{ch:02-state_of_the_art} se cumple con los dos primeros objetivos. Se han
+explicado en detalle las características y peculiaridades de los sistemas
+empotrados, introduciendo la terminología usada para referirse a ellos y las
+distintas clasificaciones existentes. También se ha detallado el modelo de
+computación en la nube que tanta popularidad tiene en la actualidad, derivando
+de él los modelos de computación en el \textit{fog}/\textit{edge} que se
+plantean para la gestión de la enorme cantidad de datos generada por el nuevo
+IoT industrial. En este contexto, son cruciales las tecnologías de
+virtualización que se exponen en la sección \ref{sec:02-virtualization}, donde
+se realiza una comparativa entre los distintos tipos de virtualización
+observando la bibliografía. En la sección \ref{sec:02-real_time} se ha realizado
+una introducción a la computación en tiempo real, centrándonos especialmente en
+los algoritmos de planificación existentes y sus características. También en
+esta sección, las soluciones de tiempo real basadas en el kernel de Linux se han
+introducido y comparado, cumpliendo con el segundo objetivo. Entre todas estas
+soluciones, se decidió apostar por el uso directo del kernel de Linux parcheado
+con \texttt{PREEMPT\_RT} en lugar de optar por una solución basada en
+co-kernels. La decisión se apoyó esencialmente en el uso de la API estándar del
+kernel de Linux y la posibilidad de acceso al enorme ecosistema de herramientas
+disponible para este entorno, incluyendo las principales tecnologías de
+virtualización. Se determinó en la bibliografía que esta plataforma no era apta
+para sistemas con restricciones temporales estrictas, aunque sí para las que son
+más suaves. Este hecho era aceptable para nuestro trabajo, debido a que nos
+queríamos centrar en la mejora de la calidad del servicio y no tanto en el
+determinismo.
+
+Este análisis ha permitido comprender mejor los problemas planteados por la
+Industria 4.0 y cómo los modelos \textit{fog} y \textit{edge}, apoyándose en las
+tecnologías de virtualización, se posicionan como posibles soluciones a los
+mismos. De todas las tecnologías de virtualización introducidas en la sección
+\ref{sec:02-virtualization}, decidimos centrarnos en los contenedores,
+concretamente en Docker, debido a que su propuesta es que son más livianos que
+las máquinas virtuales clásicas manteniendo un aislamiento entre contenedores
+considerable. Así, en el capítulo \ref{ch:03-performance_analysis} se cumplió
+con el tercer objetivo de este trabajo al realizar un análisis del rendimiento
+de los procesos de tiempo real contenerizados. Al final, se observó que el uso
+de contenedores introduce un aumento en la latencia de activación de los
+procesos que, además, aumenta de forma lineal con el número de hilos. En
+concreto, se estimó que este aumento es del 1.2\% para cada nuevo hilo. Las
+latencias máximas observadas nos dejaban claro que no se podía plantear todavía
+el uso de Docker para la implementación de tareas de tiempo real «duras», al
+menos en la plataforma escogida. Aún así, su uso en tareas con restricciones más
+suaves si se mantenía posible. Otro aspecto que se observó es que los mecanismos
+de gestión del ciclo de vida de loso contenedores que implementa Docker no
+ofrecen el comportamiento determinista que se necesitaría para incorporarlos a
+los sistemas de tiempo real. Por ello, aunque los procesos contenerizados sí son
+viables en algunas situaciones, las tareas de despliegue de los mismos se deben
+realizar de antemano.
+
+El cuarto objetivo planteado para este proyecto buscaba el desarrollo de una
+herramienta que, no centrándose tanto en el determinismo de sus operaciones,
+permitiese una mejora de la calidad del servicio en sistemas de control sobre
+las capas \textit{fog} y \textit{edge}. La idea era simplificar el proceso de
+gestión de los nodos que componen estas capas y las tareas a ejecutar sobre los
+mismos, ofreciendo mecanismos sencillos para su despliegue. El uso de
+contenedores para el despliegue de estas tareas tiene un gran impacto sobre la
+calidad de vida de los ingenieros debido a que, con una sola implementación, se
+consigue una tarea que se puede ejecutar en todos los nodos del sistema,
+independientemente de la arquitectura concreta. En el capítulo
+\ref{ch:04-implementation}, se abordó el diseño y la implementación de esta
+herramienta, que sirve como prueba de concepto para las ideas planteadas,
+aplicando técnicas de Ingeniería del Software y patrones de diseño modernos. El
+software desarrollado es validado mediante pruebas unitarias, las cuáles se
+ejecutan automáticamente a lo largo del ciclo de vida del código gracias a los
+flujos de integración continua que se han definido. Esta integración continua
+también nos permite obtener artefactos distribuibles del código para cada nueva
+versión de forma automática y sencilla, facilitando el desarrollo.
+
+Por último, se marcó también como objetivo caracterizar el rendimiento de la
+herramienta desarrollada, tareas que se llevó a cabo en la sección
+\ref{sec:04-performance}. En concreto, se midió la latencia en la operación de
+despliegue de las tareas. Como era de esperar dados los resultados de latencia
+en el lanzamiento de contenedores obtenidos en el capítulo
+\ref{ch:03-performance_analysis}, los tiempos son muy altos. Se ha observado un
+incremento del 191,84\% en la latencia respecto a las pruebas que se acaban de
+mencionar, provocado principalmente por las comunicaciones de red involucradas
+en la operación. Sin embargo, es necesario destacar que estas comunicaciones
+existen también en una capa \textit{fog}/\textit{edge} real, por lo que este
+dato es interesante. Refuerza aún más la idea que expresábamos antes de que los
+contenedores que dan respuesta a un evento de tiempo real concreto deben estar
+ejecutándose de antemano, sin poder formar parte la operación de despliegue de
+esta respuesta. Se observó también que el número de tareas presentes en un nodo
+influye en esta latencia de despliegue para nuevas tareas. Esta latencia aumenta
+de forma lineal respecto del número de tareas con una pendiente de 49. Debido a
+estas características y al uso de Docker, solo planteamos esta herramienta para
+el despliegue de tareas de tiempo real «blandas». No obstante, nada nos hace
+pensar que, si se utiliza un motor de contenedores especializado, no se pueda
+usar también para tareas con restricciones duras, aunque sería necesario llevar
+a cabo un proceso de validación aún más intenso.
 
 En líneas generales, consideramos que los resultados apoyan claramente la
 factibilidad del uso de contenedores para el despliegue de tareas de tiempo real
@@ -43,15 +119,20 @@ gestionar el despliegue de estas tareas sobre múltiples dispositivos de forma
 centralizada y sencilla. El producto final que se ha implementado constituye una
 prueba de concepto de lo que es posible realizar en este contexto, permitiendo
 llevar a cabo las tareas deseadas y cumpliendo con los objetivos propuestos para
-el mismo. Aún así, se trata de un software joven donde todavía se pueden
-encontrar algunos errores y, sobre todo, para el que es necesario un mayor
-período de prueba y validación antes de ser considerado su uso en entornos de
-producción.
+el mismo. Aún así, se considera necesario un mayor período de prueba y
+validación antes de ser considerado su uso en entornos de producción. También es
+necesaria una mayor investigación en el uso de contenedores para este tipo de
+contextos, dado que se ha dejado clara la limitación de Docker en el
+determinismo de sus operaciones y el \textit{overhead} que incluye en la
+ejecución de las tareas. Sería interesante considerar la adaptación de la
+herramienta para que pueda trabajar no solo con Docker o contenedores, sino con
+otras tecnologías de hipervisores como ACRN o KVM que están trabajando mucho en
+el aspecto de tiempo real.
 
-Esto, sumado a las buenas sensaciones obtenidas del uso inicial del sistema
-desarrollado y a los resultados de la experimentación llevada a cabo, nos
-permiten afirmar que el resultado del proyecto ha sido satisfactorio, aunque aún
-queda trabajo por realizar para poder obtener una solución completamente pulida.
+Las buenas sensaciones obtenidas del uso inicial del sistema desarrollado y a
+los resultados de la experimentación llevada a cabo, nos permiten afirmar que el
+resultado del proyecto ha sido satisfactorio, aunque aún queda trabajo por
+realizar para poder obtener una solución completamente pulida.
 
 \section{Opinión personal}
 
@@ -92,27 +173,18 @@ serían necesarias para controlar esta clase de despliegues.
 
 \section{Trabajo futuro}
 
-En el marco del uso de contenedores para el despliegue de tareas de tiempo real,
-se ha visto que es necesario invertir en el desarrollo de un motor especialmente
-diseñado e implementado para este caso de uso, que asegure un comportamiento
-determinista en sus operaciones y tenga en cuenta las particularidades de la
-computación en tiempo real a la hora de ejecutar los contenedores. Estos
-contenedores podrían usarse para combinar cargas de trabajo críticas y no
-críticas, pero para ello es necesario, como ya indicaba Burns en
-\cite{burns_mixed_2015}, disponer de métodos de análisis general para sistemas
-de criticalidad mixta que tengan en cuenta todos los recursos del sistema.
+Dentro del marco del uso de contenedores para el despliegue de tareas de tiempo
+real, se ha visto que es necesario invertir en el desarrollo de un motor
+especialmente diseñado e implementado para este caso de uso, que asegure un
+comportamiento determinista en sus operaciones y tenga en cuenta las
+particularidades de la computación en tiempo real a la hora de ejecutar los
+contenedores.
 
 En lo que respecta a la herramienta desarrollada en este trabajo, está claro que
 se necesita hacer más hincapié en su validación, siendo necesario realizar más
 pruebas con cargas de trabajo reales. También sería necesario añadir
 procedimientos para gestionar el despliegue sobre dispositivos multiprocesador,
-ya que actualmente esta situación no se maneja adecuadamente. El sistema
-desarrollado solo puede ser pensado para el despliegue de tareas de tiempo real
-blandas, ya que se ve limitado por el uso de Docker y su rendimiento. No
-obstante, nada nos hace pensar que, si se consigue un motor de contenedores
-especializado como el ya comentado, no se pueda usar también para tareas con
-restricciones duras, aunque sería necesario llevar a cabo un proceso de
-validación aún más intenso.
+ya que actualmente esta situación no se maneja adecuadamente.
 
 Desde el punto de vista de la usabilidad del sistema, sería muy beneficioso
 contar con un cliente con interfaz gráfica para su gestión. Aunque el cliente de
