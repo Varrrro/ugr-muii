@@ -232,14 +232,6 @@ del ciclo de vida de los contenedores no están preparadas para ser
 deterministas, aunque, obviamente, dudamos de que este aspecto fuera considerado
 en su diseño.
 
-\begin{figure}
-    \centering
-    \includegraphics[width=\textwidth]{03-container_analysis/container-latency.png}
-    \caption{Gráfico de líneas con las latencias observadas en el lanzamiento de
-        contenedores implementados con distintos lenguajes.}
-    \label{fig:03-container_latency}
-\end{figure}
-
 Sería muy interesante ejecutar estas mismas pruebas usando algún otro motor de
 contenedores (p. ej., Podman, Kata, rkt) y así comprobar si, aunque en su
 análisis general el rendimiento es similar, en la ejecución de procesos de
@@ -247,3 +239,11 @@ tiempo real se observa alguna diferencia. Es más, también se podría probar un
 configuración basada en hipervisores para comparar su rendimiento con el de los
 contenedores, aunque ya se vió en la sección \ref{sec:02-virtualization} que
 éste debería ser parecido \cite{manco_my_2017} \cite{felter_updated_2015}.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=\textwidth]{03-container_analysis/container-latency.png}
+    \caption{Gráfico de líneas con las latencias observadas en el lanzamiento de
+        contenedores implementados con distintos lenguajes.}
+    \label{fig:03-container_latency}
+\end{figure}

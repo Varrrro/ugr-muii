@@ -428,7 +428,7 @@ el caso de nuestro sistema, tenemos los recursos detallados en las tablas
 \ref{tab:04-node_resource} y \ref{tab:04-task_resource}, mientras que las
 operaciones posibles se presentan en la sección \ref{sec:server-design}.
 
-\begin{table}[H]
+\begin{table}
     \centering
     \begin{tabular}{ |>{\columncolor[gray]{0.8}}l|p{0.8\textwidth}| }
         \hline
@@ -454,7 +454,7 @@ operaciones posibles se presentan en la sección \ref{sec:server-design}.
     \label{tab:04-node_resource}
 \end{table}
 
-\begin{table}[H]
+\begin{table}
     \centering
     \begin{tabular}{ |>{\columncolor[gray]{0.8}}l|p{0.8\textwidth}| }
         \hline
@@ -538,15 +538,15 @@ funcionalidades concretas. El diagrama de la figura
 \ref{fig:04-server_architecture} refleja esta arquitectura que se acaba de
 describir.
 
-En cuanto a las operaciones concretas que se pueden realizar mediante la API
-REST del servidor, se han definido e implementado las siguientes:
-
 \begin{figure}
     \centering
-    \includegraphics[width=0.9\textwidth]{04-implementation/server.png}
+    \includegraphics[width=0.7\textwidth]{04-implementation/server.png}
     \caption{Diagrama de arquitectura del servidor.}
     \label{fig:04-server_architecture}
 \end{figure}
+
+En cuanto a las operaciones concretas que se pueden realizar mediante la API
+REST del servidor, se han definido e implementado las siguientes:
 
 \begin{itemize}
     \item \texttt{GET /nodes}
@@ -1711,7 +1711,7 @@ provocado principalmente por las comunicaciones de red. Aún así, cabe destacar
 que las pruebas se han realizado en una red local cableada similar a la que se
 podría encontrar en algunas capas \textit{fog}.
 
-\begin{table}[H]
+\begin{table}
     \centering
     \begin{tabular}{ | c | c | c | c | }
         \hline
@@ -1755,12 +1755,12 @@ tareas. Para caracterizar este incremento, se ha aplicado un modelo de regresió
 lineal sobre los valores medios de las latencias para cada caso de prueba, cuyo
 resultado es el de la figura \ref{fig:04-deploy_latency_regression}.
 
-Aunque el valor de $R^{2}$ del modelo obtenido es muy alto, es válido para datos
-experimentales como son los presentados. Observando la función que se aprecia en
-la gráfica, la pendiente de la recta nos indica el incremento en la latencia que
-podemos esperar para cada nueva tarea que se esté ejecutando en el nodo,
-mientras que la ordenada en el origen es, como era de esperar, muy similar al
-valor de la latencia media observada en la tabla \ref{tab:04-deploy_latency}.
+El valor de $R^{2}$ del modelo obtenido es alto, lo que nos indica que es bueno.
+Observando la función que se aprecia en la gráfica, la pendiente de la recta nos
+indica el incremento en la latencia que podemos esperar para cada nueva tarea
+que se esté ejecutando en el nodo, mientras que la ordenada en el origen es,
+como era de esperar, muy similar al valor de la latencia media observada en la
+tabla \ref{tab:04-deploy_latency}.
 
 \begin{figure}
     \centering
@@ -1770,7 +1770,7 @@ valor de la latencia media observada en la tabla \ref{tab:04-deploy_latency}.
     \label{fig:04-deploy_latency_progression}
 \end{figure}
 
-\begin{figure}[H]
+\begin{figure}
     \centering
     \includegraphics[width=\textwidth]{04-implementation/deploy-latency-regression.png}
     \caption{Regresión lineal de la latencia media según el número de tareas
