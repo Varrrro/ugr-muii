@@ -1751,16 +1751,19 @@ tiempo de ejecución y 30 $ms$ para el límite temporal y el período. Los
 resultados obtenidos son los que se muestran en la gráfica de la figura
 \ref{fig:04-deploy_latency_progression}. Observando esta gráfica, queda claro
 que la congestión en el nodo aumenta la latencia del despliegue de nuevas
-tareas. Para caracterizar este incremento, se ha aplicado un modelo de regresión
-lineal sobre los valores medios de las latencias para cada caso de prueba, cuyo
-resultado es el de la figura \ref{fig:04-deploy_latency_regression}.
+tareas, seguramente debido a que el nodo debe garantizar la ejecución de las
+tareas de tiempo real y, por tanto, reduce la porción de CPU que asigna a la
+operación de lanzamiento del contenedor. Para caracterizar este incremento, se
+ha aplicado un modelo de regresión lineal sobre los valores medios de las
+latencias para cada caso de prueba, cuyo resultado es el de la figura
+\ref{fig:04-deploy_latency_regression}.
 
-El valor de $R^{2}$ del modelo obtenido es alto, lo que nos indica que es bueno.
-Observando la función que se aprecia en la gráfica, la pendiente de la recta nos
-indica el incremento en la latencia que podemos esperar para cada nueva tarea
-que se esté ejecutando en el nodo, mientras que la ordenada en el origen es,
-como era de esperar, muy similar al valor de la latencia media observada en la
-tabla \ref{tab:04-deploy_latency}.
+El valor de $R^{2}$ del modelo obtenido no llega a ser muy alto, pero nos indica
+que existe una correlación entre las variables. Observando la función que se
+muestra en la gráfica, la pendiente de la recta nos indica el incremento en la
+latencia que podemos esperar para cada nueva tarea que se esté ejecutando en el
+nodo, mientras que la ordenada en el origen es, como era de esperar, muy similar
+al valor de la latencia media observada en la tabla \ref{tab:04-deploy_latency}.
 
 \begin{figure}
     \centering
